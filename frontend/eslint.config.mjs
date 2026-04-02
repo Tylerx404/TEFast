@@ -2,8 +2,24 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+const patchedNextVitals = nextVitals.map((config) => {
+  if (!("rules" in config) || !config.rules) {
+    return config;
+  }
+
+  return {
+    ...config,
+    rules: Object.fromEntries(
+      Object.entries(config.rules).map(([ruleName, value]) => [
+        ruleName,
+        ruleName.startsWith("react/") ? "off" : value,
+      ]),
+    ),
+  };
+});
+
 const eslintConfig = defineConfig([
-  ...nextVitals,
+  ...patchedNextVitals,
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
