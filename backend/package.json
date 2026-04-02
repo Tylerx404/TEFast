@@ -3,10 +3,20 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch src/server.ts",
-    "start": "bun src/server.ts",
-    "build": "bun build ./src/server.ts --target bun --outdir dist",
+    "dev": "bun --watch src/app.ts",
+    "start": "bun src/app.ts",
+    "build": "bun build ./src/app.ts --target bun --outdir dist",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "ejs": "~2.6.1",
+    "express": "~4.16.1",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.5",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.2"
   },
   "devDependencies": {
     "@types/bun": "latest",
