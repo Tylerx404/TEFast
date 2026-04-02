@@ -1,4 +1,5 @@
 var jwt = require("jsonwebtoken");
+var helper = require("./helper");
 
 var authHandler = {
   findUserById: async function (req, userId) {
@@ -16,6 +17,7 @@ var authHandler = {
             u.username,
             u.email,
             u.full_name,
+            u.phone,
             u.avatar_url,
             u.status,
             u.is_deleted,
@@ -39,11 +41,12 @@ var authHandler = {
         email: getUser.rows[0].email,
         fullName: getUser.rows[0].full_name,
         avatarUrl: getUser.rows[0].avatar_url,
-        status: getUser.rows[0].status,
+        phone: getUser.rows[0].phone,
+        status: String(getUser.rows[0].status || "").toUpperCase(),
         isDeleted: getUser.rows[0].is_deleted,
         role: {
           id: getUser.rows[0].role_id,
-          name: getUser.rows[0].role_name,
+          name: String(getUser.rows[0].role_name || "").toUpperCase(),
         },
       };
     } catch (error) {
@@ -51,77 +54,89 @@ var authHandler = {
     }
   },
 
-  checkLogin: function (req, res, next) {
+  readToken: function (req) {
+    if (req.cookies && req.cookies.token) {
+      return req.cookies.token;
+    }
+
+    if (req.headers && req.headers.authorization) {
+      var authorizationToken = req.headers.authorization;
+
+      if (!authorizationToken.startsWith("Bearer ")) {
+        return null;
+      }
+
+      return authorizationToken.split(" ")[1];
+    }
+
+    return null;
+  },
+
+  tryLoadCurrentUser: async function (req) {
     try {
-      var token;
+      var token = authHandler.readToken(req);
 
-      if (req.cookies && req.cookies.token) {
-        token = req.cookies.token;
-      } else {
-        var authorizationToken = req.headers.authorization;
-
-        if (!authorizationToken || !authorizationToken.startsWith("Bearer")) {
-          res.status(403).send({
-            message: "ban chua dang nhap",
-          });
-          return;
-        }
-
-        token = authorizationToken.split(" ")[1];
+      if (!token) {
+        return null;
       }
 
       var result = jwt.verify(token, process.env.JWT_SECRET || "HUTECH");
 
       if (result.exp * 1000 > Date.now()) {
         req.userId = result.id || result.sub;
-        next();
-      } else {
-        res.status(403).send({
-          message: "ban chua dang nhap",
-        });
+        req.currentUser = await authHandler.findUserById(req, req.userId);
+
+        if (
+          !req.currentUser ||
+          req.currentUser.isDeleted ||
+          req.currentUser.status == "BLOCKED"
+        ) {
+          return null;
+        }
+
+        return req.currentUser;
       }
+
+      return null;
     } catch (error) {
-      res.status(403).send({
-        message: "ban chua dang nhap",
-      });
+      return null;
+    }
+  },
+
+  checkLogin: async function (req, res, next) {
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
+
+    if (!currentUser) {
+      helper.sendError(res, 401, "Authentication required");
       return;
     }
+
+    next();
   },
 
   checkRole: function (...requiredRole) {
     return async function (req, res, next) {
       try {
-        var userId = req.userId;
-        var getUser = await authHandler.findUserById(req, userId);
+        var currentUser = req.currentUser;
 
-        if (!getUser) {
-          res.status(403).send({
-            message: "ban khong co quyen",
-          });
+        if (!currentUser) {
+          currentUser = await authHandler.tryLoadCurrentUser(req);
+        }
+
+        if (!currentUser) {
+          helper.sendError(res, 401, "Authentication required");
           return;
         }
 
-        if (getUser.isDeleted || getUser.status == "BLOCKED") {
-          res.status(403).send({
-            message: "ban khong co quyen",
-          });
-          return;
-        }
-
-        var roleName = getUser.role.name;
+        var roleName = currentUser.role.name;
 
         if (requiredRole.includes(roleName)) {
-          req.currentUser = getUser;
           next();
         } else {
-          res.status(403).send({
-            message: "ban khong co quyen",
-          });
+          helper.sendError(res, 403, "Forbidden");
         }
       } catch (error) {
-        res.status(403).send({
-          message: "ban khong co quyen",
-        });
+        helper.sendError(res, 403, "Forbidden");
       }
     };
   },

@@ -1,5 +1,4 @@
 const bcrypt = require("bcrypt");
-const { randomUUID } = require("crypto");
 const { roleNames } = require("./roles");
 const { courseCategories } = require("./courses");
 
@@ -11,7 +10,6 @@ const usersSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     username: {
@@ -44,6 +42,10 @@ const usersSchema = {
       dbName: "avatar_url",
       type: "TEXT",
       default: "https://i.sstatic.net/l60Hf.png",
+    },
+
+    phone: {
+      type: "VARCHAR(20)",
     },
 
     status: {
@@ -115,13 +117,16 @@ const userHooks = {
 };
 
 const createUsersTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(255) NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   full_name VARCHAR(150) DEFAULT '',
   avatar_url TEXT DEFAULT 'https://i.sstatic.net/l60Hf.png',
+  phone VARCHAR(20),
   status VARCHAR(20) NOT NULL DEFAULT 'INACTIVE',
   role_id UUID NOT NULL REFERENCES roles(id),
   login_count INTEGER DEFAULT 0,

@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const lessonContentTypes = ["TEXT", "VIDEO", "AUDIO", "DOCUMENT"];
 
 const lessonsSchema = {
@@ -8,7 +6,6 @@ const lessonsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     courseId: {
@@ -72,8 +69,10 @@ const lessonsSchema = {
 };
 
 const createLessonsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS lessons (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   content_type VARCHAR(20) NOT NULL,

@@ -3,12 +3,13 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var Pool = require("pg").Pool;
+var helper = require("./utils/helper");
 
 var app = express();
 var PORT = Number(process.env.PORT) || 3001;
 var HOST = process.env.HOST || "127.0.0.1";
 var DATABASE_URL =
-  process.env.DATABASE_URL || "postgres://user:password@localhost:5432/tefast_db";
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/tefast";
 
 app.disable("x-powered-by");
 app.set("views", path.join(__dirname, "../views"));
@@ -24,7 +25,6 @@ var pool = new Pool({
 });
 
 app.locals.pg = pool;
-console.log("da connect postgres");
 
 app.use("/", require("./routes/index"));
 app.use("/auth", require("./routes/auth"));
@@ -44,15 +44,22 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (err, req, res, next) {
-  res.status(err.status || 500).send({
-    message: err.message || "server error",
-  });
+  helper.sendError(res, err.status || 500, err.message || "Internal server error");
 });
 
 if (require.main === module) {
-  app.listen(PORT, HOST, function () {
-    console.log("Server running at http://" + HOST + ":" + PORT);
-  });
+  pool
+    .query("SELECT 1")
+    .then(function () {
+      console.log("da connect postgres");
+      app.listen(PORT, HOST, function () {
+        console.log("Server running at http://" + HOST + ":" + PORT);
+      });
+    })
+    .catch(function (error) {
+      console.error("database setup error:", error);
+      process.exit(1);
+    });
 }
 
 module.exports = app;

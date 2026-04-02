@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const roleNames = ["STUDENT", "TEACHER", "ADMIN"];
 
 const rolesSchema = {
@@ -8,7 +6,6 @@ const rolesSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     name: {
@@ -36,8 +33,10 @@ const rolesSchema = {
 };
 
 const createRolesTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS roles (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(20) NOT NULL UNIQUE,
   description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -47,12 +46,13 @@ CREATE TABLE IF NOT EXISTS roles (
 `;
 
 const seedRolesSql = `
-INSERT INTO roles (id, name, description)
+INSERT INTO roles (name, description)
 VALUES
-  ('11111111-1111-1111-1111-111111111111', 'STUDENT', 'Default learning role'),
-  ('22222222-2222-2222-2222-222222222222', 'TEACHER', 'Course management role'),
-  ('33333333-3333-3333-3333-333333333333', 'ADMIN', 'System administration role')
-ON CONFLICT (name) DO NOTHING;
+  ('STUDENT', 'Default learning role'),
+  ('TEACHER', 'Course management role'),
+  ('ADMIN', 'System administration role')
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description;
 `;
 
 module.exports = {

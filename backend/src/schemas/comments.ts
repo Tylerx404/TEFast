@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const commentStatuses = ["ACTIVE", "HIDDEN", "DELETED"];
 
 const commentsSchema = {
@@ -8,7 +6,6 @@ const commentsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     userId: {
@@ -80,8 +77,10 @@ const commentsSchema = {
 };
 
 const createCommentsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS comments (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
   lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,

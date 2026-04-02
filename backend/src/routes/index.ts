@@ -1,4 +1,5 @@
 var express = require("express");
+var helper = require("../utils/helper");
 
 var router = express.Router();
 
@@ -17,8 +18,7 @@ router.get("/home", function (req, res, next) {
 });
 
 router.get("/health", function (req, res, next) {
-  res.send({
-    message: "server dang chay",
+  helper.sendSuccess(res, "Health fetched", {
     service: process.env.APP_NAME || "tefast-backend",
     status: "ok",
     runtime: "bun",

@@ -1,4 +1,3 @@
-const { randomUUID } = require("crypto");
 const { courseCategories, courseLevels } = require("./courses");
 
 const vocabularySchema = {
@@ -7,7 +6,6 @@ const vocabularySchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     teacherId: {
@@ -93,8 +91,10 @@ const vocabularySchema = {
 };
 
 const createVocabularyTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS vocabulary (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   word VARCHAR(150) NOT NULL,
   phonetic VARCHAR(100),

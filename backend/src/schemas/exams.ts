@@ -1,4 +1,3 @@
-const { randomUUID } = require("crypto");
 const { courseCategories } = require("./courses");
 
 const examTypes = ["MINI_TEST", "FULL_TEST", "PRACTICE"];
@@ -9,7 +8,6 @@ const examsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     courseId: {
@@ -93,9 +91,11 @@ const examsSchema = {
 };
 
 const createExamsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS exams (
-  id UUID PRIMARY KEY,
-  course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
   teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   title VARCHAR(255) NOT NULL,
   category VARCHAR(10) NOT NULL,
@@ -119,8 +119,29 @@ CREATE INDEX IF NOT EXISTS exams_category_exam_type_idx
   ON exams (category, exam_type);
 `;
 
+const createExamSessionsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS exam_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device VARCHAR(50),
+  timezone VARCHAR(100),
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  submitted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS exam_sessions_exam_id_idx ON exam_sessions (exam_id);
+CREATE INDEX IF NOT EXISTS exam_sessions_user_id_idx ON exam_sessions (user_id);
+`;
+
 module.exports = {
   examTypes,
   examsSchema,
   createExamsTableSql,
+  createExamSessionsTableSql,
 };

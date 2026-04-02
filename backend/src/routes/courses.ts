@@ -1,53 +1,143 @@
 var express = require("express");
-var crypto = require("crypto");
 var helper = require("../utils/helper");
 var coursesModule = require("../schemas/courses");
+var lessonsModule = require("../schemas/lessons");
+var enrollmentsModule = require("../schemas/enrollments");
+var authHandler = require("../utils/authHandler");
 
 var router = express.Router();
 var courseCategories = coursesModule.courseCategories;
 var courseLevels = coursesModule.courseLevels;
+var lessonContentTypes = lessonsModule.lessonContentTypes;
+var enrollmentStatuses = enrollmentsModule.enrollmentStatuses;
+var checkLogin = authHandler.checkLogin;
+var checkRole = authHandler.checkRole;
+
+async function findCourseById(req, courseId) {
+  var pool = req.app.locals.pg;
+  var result = await pool.query(
+    "SELECT id, teacher_id FROM courses WHERE id = $1 LIMIT 1",
+    [courseId],
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0];
+}
+
+async function ensureCourseOwnerOrAdmin(req, res, courseId) {
+  var course = await findCourseById(req, courseId);
+
+  if (!course) {
+    helper.sendError(res, 404, "Course not found");
+    return null;
+  }
+
+  if (
+    req.currentUser.role.name === "ADMIN" ||
+    course.teacher_id === req.currentUser.id
+  ) {
+    return course;
+  }
+
+  helper.sendError(res, 403, "Forbidden");
+  return null;
+}
+
+async function buildCourseLessonAccess(req, courseId) {
+  var pool = req.app.locals.pg;
+  var course = await findCourseById(req, courseId);
+  var currentUser;
+  var enrollmentResult;
+
+  if (!course) {
+    return null;
+  }
+
+  currentUser = await authHandler.tryLoadCurrentUser(req);
+
+  if (!currentUser) {
+    return {
+      course: course,
+      canViewAll: false,
+    };
+  }
+
+  if (
+    currentUser.role.name === "ADMIN" ||
+    course.teacher_id === currentUser.id
+  ) {
+    return {
+      course: course,
+      canViewAll: true,
+    };
+  }
+
+  enrollmentResult = await pool.query(
+    `SELECT id
+     FROM enrollments
+     WHERE course_id = $1
+       AND user_id = $2
+       AND status IN ('ACTIVE', 'COMPLETED')
+     LIMIT 1`,
+    [courseId, currentUser.id],
+  );
+
+  return {
+    course: course,
+    canViewAll: enrollmentResult.rows.length > 0,
+  };
+}
 
 router.get("/", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
-    var { page, limit } = helper.readPagination(req.query);
+    var pageLimit = helper.readPagination(req.query);
+    var page = pageLimit.page;
+    var limit = pageLimit.limit;
     var offset = (page - 1) * limit;
-
     var conditions: string[] = [];
     var values: any[] = [];
     var idx = 1;
+    var whereClause;
+    var countResult;
+    var total;
+    var result;
+    var courses;
 
     if (req.query.category && courseCategories.includes(req.query.category)) {
       conditions.push("c.category = $" + idx++);
       values.push(req.query.category);
     }
+
     if (req.query.teacherId) {
       conditions.push("c.teacher_id = $" + idx++);
       values.push(req.query.teacherId);
     }
+
     if (req.query.keyword) {
       conditions.push("c.title ILIKE $" + idx++);
       values.push("%" + req.query.keyword + "%");
     }
+
     if (req.query.isPublished !== undefined) {
       conditions.push("c.is_published = $" + idx++);
-      values.push(req.query.isPublished !== "false");
+      values.push(req.query.isPublished === "true");
     }
 
-    var whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+    whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
-    var countResult = await pool.query(
+    countResult = await pool.query(
       `SELECT COUNT(*) FROM courses c ${whereClause}`,
       values,
     );
-    var total = parseInt(countResult.rows[0].count, 10);
+    total = parseInt(countResult.rows[0].count, 10);
 
     values.push(limit, offset);
-    var result = await pool.query(
-      `SELECT c.*, u.full_name AS teacher_name,
-              (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id) AS lesson_count,
-              (SELECT COUNT(*) FROM exams e WHERE e.course_id = c.id) AS exam_count,
-              (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = c.id) AS enrollment_count
+    result = await pool.query(
+      `SELECT c.*, u.full_name AS teacher_name
        FROM courses c
        LEFT JOIN users u ON u.id = c.teacher_id
        ${whereClause}
@@ -56,256 +146,325 @@ router.get("/", async function (req, res, next) {
       values,
     );
 
-    var courses = result.rows.map(function (row) {
+    courses = result.rows.map(function (row) {
       return {
         id: row.id,
         title: row.title,
         slug: row.slug,
-        description: row.description,
         category: row.category,
         level: row.level,
-        price: parseFloat(row.price),
         thumbnailUrl: row.thumbnail_url,
-        teacherId: row.teacher_id,
         teacher: {
           id: row.teacher_id,
           fullName: row.teacher_name,
         },
-        stats: {
-          lessonCount: parseInt(row.lesson_count, 10),
-          examCount: parseInt(row.exam_count, 10),
-          enrollmentCount: parseInt(row.enrollment_count, 10),
-        },
         isPublished: row.is_published,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
       };
     });
 
-    res.send({
-      message: "lay danh sach khoa hoc thanh cong",
-      courses: courses,
-      pagination: helper.buildPaginationMeta(page, limit, total),
-    });
+    helper.sendSuccess(
+      res,
+      "Courses fetched",
+      courses,
+      helper.buildPaginationMeta(page, limit, total),
+    );
   } catch (error) {
     console.error("list courses error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 
-router.post("/", async function (req, res, next) {
+router.post("/", checkLogin, checkRole("TEACHER", "ADMIN"), async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
     var body = req.body || {};
+    var existSlug;
+    var result;
+    var row;
 
-    if (!body.title || !body.slug || !body.category || !body.level) {
-      return res.status(400).send({
-        message: "title, slug, category va level la bat buoc",
-      });
+    if (
+      !body.title ||
+      !body.slug ||
+      !body.description ||
+      !body.category ||
+      !body.level
+    ) {
+      helper.sendError(res, 400, "Validation failed", [
+        {
+          field: "title",
+          message: "title, slug, description, category and level are required",
+        },
+      ]);
+      return;
     }
 
-    if (!courseCategories.includes(body.category) || !courseLevels.includes(body.level)) {
-      return res.status(422).send({
-        message: "category hoac level khong hop le",
-      });
+    if (!courseCategories.includes(body.category)) {
+      helper.sendError(res, 422, "Validation failed", [
+        {
+          field: "category",
+          message: "Category must be TOEIC or IELTS",
+        },
+      ]);
+      return;
     }
 
-    // Check slug unique
-    var existSlug = await pool.query(
-      "SELECT id FROM courses WHERE slug = $1",
+    if (!courseLevels.includes(body.level)) {
+      helper.sendError(res, 422, "Validation failed", [
+        {
+          field: "level",
+          message: "Level must be BEGINNER, INTERMEDIATE or ADVANCED",
+        },
+      ]);
+      return;
+    }
+
+    existSlug = await pool.query(
+      "SELECT id FROM courses WHERE slug = $1 LIMIT 1",
       [body.slug],
     );
+
     if (existSlug.rows.length > 0) {
-      return res.status(409).send({
-        message: "slug da ton tai",
-      });
+      helper.sendError(res, 409, "Slug already exists");
+      return;
     }
 
-    var courseId = crypto.randomUUID();
-
-    var result = await pool.query(
-      `INSERT INTO courses (id, teacher_id, title, slug, description, category, level, price, thumbnail_url, is_published)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
+    result = await pool.query(
+      `INSERT INTO courses (
+        teacher_id, title, slug, description, category, level, price,
+        thumbnail_url, is_published, published_at, created_at, updated_at
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, CASE WHEN $9 = TRUE THEN NOW() ELSE NULL END, NOW(), NOW()
+      )
+      RETURNING *`,
       [
-        courseId,
-        body.teacherId || req.userId,
+        req.currentUser.id,
         body.title,
         body.slug,
-        body.description || "",
+        body.description,
         body.category,
         body.level,
         body.price ?? 0,
         body.thumbnailUrl || null,
-        body.isPublished ?? false,
+        body.isPublished === true,
       ],
     );
 
-    var row = result.rows[0];
+    row = result.rows[0];
 
-    res.status(201).send({
-      message: "them khoa hoc thanh cong",
-      course: {
-        id: row.id,
-        title: row.title,
-        slug: row.slug,
-        description: row.description,
-        category: row.category,
-        level: row.level,
-        price: parseFloat(row.price),
-        thumbnailUrl: row.thumbnail_url,
-        teacherId: row.teacher_id,
-        isPublished: row.is_published,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      },
+    helper.sendCreated(res, "Course created", {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      category: row.category,
+      teacherId: row.teacher_id,
+      createdAt: row.created_at,
     });
   } catch (error) {
     console.error("create course error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 
 router.get("/:courseId/lessons", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var includePreviewOnly = req.query.includePreviewOnly === "true";
+    var access = await buildCourseLessonAccess(req, req.params.courseId);
+    var condition = "";
+    var result;
+    var lessons;
 
-    var result = await pool.query(
-      `SELECT * FROM lessons
-       WHERE course_id = $1
-       ORDER BY order_index ASC`,
-      [req.params.courseId],
-    );
-
-    var lessons = result.rows.map(function (row) {
-      return {
-        id: row.id,
-        courseId: row.course_id,
-        title: row.title,
-        contentType: row.content_type,
-        content: row.content,
-        attachmentUrl: row.attachment_url,
-        orderIndex: row.order_index,
-        isPreview: row.is_preview,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      };
-    });
-
-    res.send({
-      message: "lay lesson thanh cong",
-      lessons: lessons,
-    });
-  } catch (error) {
-    console.error("list course lessons error:", error);
-    res.status(500).send({ message: "loi he thong" });
-  }
-});
-
-router.post("/:courseId/lessons", async function (req, res, next) {
-  try {
-    var pool = req.app.locals.pg;
-    var body = req.body || {};
-
-    if (!body.title || !body.contentType || !body.content || body.orderIndex === undefined) {
-      return res.status(400).send({
-        message: "title, contentType, content va orderIndex la bat buoc",
-      });
+    if (!access) {
+      helper.sendError(res, 404, "Course not found");
+      return;
     }
 
-    var lessonId = crypto.randomUUID();
+    if (includePreviewOnly || !access.canViewAll) {
+      condition = "AND is_preview = TRUE";
+    }
 
-    var result = await pool.query(
-      `INSERT INTO lessons (id, course_id, title, content_type, content, attachment_url, order_index, is_preview)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        lessonId,
-        req.params.courseId,
-        body.title,
-        body.contentType,
-        body.content,
-        body.attachmentUrl || null,
-        body.orderIndex,
-        body.isPreview ?? false,
-      ],
+    result = await pool.query(
+      `SELECT id, course_id, title, order_index, is_preview
+       FROM lessons
+       WHERE course_id = $1 ${condition}
+       ORDER BY order_index ASC, created_at ASC`,
+      [req.params.courseId],
     );
 
-    var row = result.rows[0];
-
-    res.status(201).send({
-      message: "them lesson thanh cong",
-      lesson: {
+    lessons = result.rows.map(function (row) {
+      return {
         id: row.id,
         courseId: row.course_id,
         title: row.title,
-        contentType: row.content_type,
-        content: row.content,
-        attachmentUrl: row.attachment_url,
         orderIndex: row.order_index,
         isPreview: row.is_preview,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      },
-    });
-  } catch (error) {
-    console.error("create course lesson error:", error);
-    res.status(500).send({ message: "loi he thong" });
-  }
-});
-
-router.get("/:courseId/enrollments", async function (req, res, next) {
-  try {
-    var pool = req.app.locals.pg;
-    var { page, limit } = helper.readPagination(req.query);
-    var offset = (page - 1) * limit;
-
-    var countResult = await pool.query(
-      "SELECT COUNT(*) FROM enrollments WHERE course_id = $1",
-      [req.params.courseId],
-    );
-    var total = parseInt(countResult.rows[0].count, 10);
-
-    var result = await pool.query(
-      `SELECT e.id, e.course_id, e.progress_percent, e.status,
-              u.id AS user_id, u.full_name
-       FROM enrollments e
-       LEFT JOIN users u ON u.id = e.user_id
-       WHERE e.course_id = $1
-       ORDER BY e.enrolled_at DESC
-       LIMIT $2 OFFSET $3`,
-      [req.params.courseId, limit, offset],
-    );
-
-    var enrollments = result.rows.map(function (row) {
-      return {
-        id: row.id,
-        user: {
-          id: row.user_id,
-          fullName: row.full_name,
-        },
-        courseId: row.course_id,
-        progressPercent: parseFloat(row.progress_percent),
-        status: row.status,
       };
     });
 
-    res.send({
-      message: "lay danh sach dang ky thanh cong",
-      enrollments: enrollments,
-      pagination: helper.buildPaginationMeta(page, limit, total),
-    });
+    helper.sendSuccess(res, "Course lessons fetched", lessons);
   } catch (error) {
-    console.error("list course enrollments error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    console.error("list course lessons error:", error);
+    helper.sendError(res, 500, "Internal server error");
   }
 });
+
+router.post(
+  "/:courseId/lessons",
+  checkLogin,
+  checkRole("TEACHER", "ADMIN"),
+  async function (req, res, next) {
+    try {
+      var pool = req.app.locals.pg;
+      var body = req.body || {};
+      var course = await ensureCourseOwnerOrAdmin(req, res, req.params.courseId);
+      var result;
+      var row;
+
+      if (!course) {
+        return;
+      }
+
+      if (
+        !body.title ||
+        !body.contentType ||
+        !body.content ||
+        body.orderIndex === undefined
+      ) {
+        helper.sendError(res, 400, "Validation failed", [
+          {
+            field: "title",
+            message: "title, contentType, content and orderIndex are required",
+          },
+        ]);
+        return;
+      }
+
+      if (!lessonContentTypes.includes(body.contentType)) {
+        helper.sendError(res, 422, "Validation failed", [
+          {
+            field: "contentType",
+            message: "Content type is invalid",
+          },
+        ]);
+        return;
+      }
+
+      result = await pool.query(
+        `INSERT INTO lessons (
+          course_id, title, content_type, content, attachment_url,
+          order_index, is_preview, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        RETURNING *`,
+        [
+          req.params.courseId,
+          body.title,
+          body.contentType,
+          body.content,
+          body.attachmentUrl || null,
+          body.orderIndex,
+          body.isPreview === true,
+        ],
+      );
+
+      row = result.rows[0];
+
+      helper.sendCreated(res, "Lesson created", {
+        id: row.id,
+        courseId: row.course_id,
+        title: row.title,
+        orderIndex: row.order_index,
+      });
+    } catch (error) {
+      console.error("create course lesson error:", error);
+      helper.sendError(res, 500, "Internal server error");
+    }
+  },
+);
+
+router.get(
+  "/:courseId/enrollments",
+  checkLogin,
+  checkRole("TEACHER", "ADMIN"),
+  async function (req, res, next) {
+    try {
+      var pool = req.app.locals.pg;
+      var pageLimit = helper.readPagination(req.query);
+      var page = pageLimit.page;
+      var limit = pageLimit.limit;
+      var offset = (page - 1) * limit;
+      var course = await ensureCourseOwnerOrAdmin(req, res, req.params.courseId);
+      var values: any[] = [req.params.courseId];
+      var idx = 2;
+      var whereClause = "e.course_id = $1";
+      var countResult;
+      var total;
+      var result;
+      var enrollments;
+
+      if (!course) {
+        return;
+      }
+
+      if (
+        req.query.status &&
+        enrollmentStatuses.includes(String(req.query.status).toUpperCase())
+      ) {
+        whereClause += " AND e.status = $" + idx++;
+        values.push(String(req.query.status).toUpperCase());
+      }
+
+      countResult = await pool.query(
+        `SELECT COUNT(*) FROM enrollments e WHERE ${whereClause}`,
+        values,
+      );
+      total = parseInt(countResult.rows[0].count, 10);
+
+      values.push(limit, offset);
+      result = await pool.query(
+        `SELECT e.id, e.progress_percent, e.status, u.id AS user_id, u.full_name
+         FROM enrollments e
+         LEFT JOIN users u ON u.id = e.user_id
+         WHERE ${whereClause}
+         ORDER BY e.enrolled_at DESC
+         LIMIT $${idx++} OFFSET $${idx++}`,
+        values,
+      );
+
+      enrollments = result.rows.map(function (row) {
+        return {
+          id: row.id,
+          user: {
+            id: row.user_id,
+            fullName: row.full_name,
+          },
+          progressPercent: parseFloat(row.progress_percent),
+          status: row.status,
+        };
+      });
+
+      helper.sendSuccess(
+        res,
+        "Course enrollments fetched",
+        enrollments,
+        helper.buildPaginationMeta(page, limit, total),
+      );
+    } catch (error) {
+      console.error("list course enrollments error:", error);
+      helper.sendError(res, 500, "Internal server error");
+    }
+  },
+);
 
 router.get("/:id", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var result;
+    var row;
 
-    var result = await pool.query(
+    result = await pool.query(
       `SELECT c.*, u.full_name AS teacher_name,
               (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id) AS lesson_count,
               (SELECT COUNT(*) FROM exams e WHERE e.course_id = c.id) AS exam_count,
@@ -318,14 +477,13 @@ router.get("/:id", async function (req, res, next) {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).send({
-        message: "khong tim thay khoa hoc",
-      });
+      helper.sendError(res, 404, "Course not found");
+      return;
     }
 
-    var row = result.rows[0];
+    row = result.rows[0];
 
-    res.send({
+    helper.sendSuccess(res, "Course fetched", {
       id: row.id,
       title: row.title,
       slug: row.slug,
@@ -334,7 +492,6 @@ router.get("/:id", async function (req, res, next) {
       level: row.level,
       price: parseFloat(row.price),
       thumbnailUrl: row.thumbnail_url,
-      teacherId: row.teacher_id,
       teacher: {
         id: row.teacher_id,
         fullName: row.teacher_name,
@@ -345,47 +502,120 @@ router.get("/:id", async function (req, res, next) {
         enrollmentCount: parseInt(row.enrollment_count, 10),
       },
       isPublished: row.is_published,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
     });
   } catch (error) {
     console.error("get course error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 
-router.patch("/:id", async function (req, res, next) {
+router.patch("/:id", checkLogin, checkRole("TEACHER", "ADMIN"), async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
     var body = req.body || {};
-
+    var course = await ensureCourseOwnerOrAdmin(req, res, req.params.id);
     var fields: string[] = [];
     var values: any[] = [];
     var idx = 1;
+    var existSlug;
+    var result;
+    var row;
 
-    if (body.title !== undefined) { fields.push("title = $" + idx++); values.push(body.title); }
-    if (body.slug !== undefined) { fields.push("slug = $" + idx++); values.push(body.slug); }
-    if (body.description !== undefined) { fields.push("description = $" + idx++); values.push(body.description); }
-    if (body.category !== undefined) { fields.push("category = $" + idx++); values.push(body.category); }
-    if (body.level !== undefined) { fields.push("level = $" + idx++); values.push(body.level); }
-    if (body.price !== undefined) { fields.push("price = $" + idx++); values.push(body.price); }
-    if (body.thumbnailUrl !== undefined) { fields.push("thumbnail_url = $" + idx++); values.push(body.thumbnailUrl); }
+    if (!course) {
+      return;
+    }
+
+    if (body.category !== undefined && !courseCategories.includes(body.category)) {
+      helper.sendError(res, 422, "Validation failed", [
+        {
+          field: "category",
+          message: "Category must be TOEIC or IELTS",
+        },
+      ]);
+      return;
+    }
+
+    if (body.level !== undefined && !courseLevels.includes(body.level)) {
+      helper.sendError(res, 422, "Validation failed", [
+        {
+          field: "level",
+          message: "Level must be BEGINNER, INTERMEDIATE or ADVANCED",
+        },
+      ]);
+      return;
+    }
+
+    if (body.slug !== undefined) {
+      existSlug = await pool.query(
+        "SELECT id FROM courses WHERE slug = $1 AND id <> $2 LIMIT 1",
+        [body.slug, req.params.id],
+      );
+
+      if (existSlug.rows.length > 0) {
+        helper.sendError(res, 409, "Slug already exists");
+        return;
+      }
+    }
+
+    if (body.title !== undefined) {
+      fields.push("title = $" + idx++);
+      values.push(body.title);
+    }
+
+    if (body.slug !== undefined) {
+      fields.push("slug = $" + idx++);
+      values.push(body.slug);
+    }
+
+    if (body.description !== undefined) {
+      fields.push("description = $" + idx++);
+      values.push(body.description);
+    }
+
+    if (body.category !== undefined) {
+      fields.push("category = $" + idx++);
+      values.push(body.category);
+    }
+
+    if (body.level !== undefined) {
+      fields.push("level = $" + idx++);
+      values.push(body.level);
+    }
+
+    if (body.price !== undefined) {
+      fields.push("price = $" + idx++);
+      values.push(body.price);
+    }
+
+    if (body.thumbnailUrl !== undefined) {
+      fields.push("thumbnail_url = $" + idx++);
+      values.push(body.thumbnailUrl);
+    }
+
     if (body.isPublished !== undefined) {
       fields.push("is_published = $" + idx++);
-      values.push(body.isPublished);
-      if (body.isPublished) {
+      values.push(body.isPublished === true);
+      if (body.isPublished === true) {
         fields.push("published_at = NOW()");
+      } else {
+        fields.push("published_at = NULL");
       }
     }
 
     if (fields.length === 0) {
-      return res.status(400).send({ message: "khong co du lieu de cap nhat" });
+      helper.sendError(res, 400, "Validation failed", [
+        {
+          field: "body",
+          message: "No data to update",
+        },
+      ]);
+      return;
     }
 
     fields.push("updated_at = NOW()");
     values.push(req.params.id);
 
-    var result = await pool.query(
+    result = await pool.query(
       `UPDATE courses SET ${fields.join(", ")}
        WHERE id = $${idx}
        RETURNING *`,
@@ -393,53 +623,50 @@ router.patch("/:id", async function (req, res, next) {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).send({ message: "khong tim thay khoa hoc" });
+      helper.sendError(res, 404, "Course not found");
+      return;
     }
 
-    var row = result.rows[0];
+    row = result.rows[0];
 
-    res.send({
-      message: "cap nhat khoa hoc thanh cong",
-      course: {
-        id: row.id,
-        title: row.title,
-        slug: row.slug,
-        description: row.description,
-        category: row.category,
-        level: row.level,
-        price: parseFloat(row.price),
-        thumbnailUrl: row.thumbnail_url,
-        isPublished: row.is_published,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      },
+    helper.sendSuccess(res, "Course updated", {
+      id: row.id,
+      title: row.title,
+      price: parseFloat(row.price),
+      updatedAt: row.updated_at,
     });
   } catch (error) {
     console.error("update course error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 
-router.delete("/:id", async function (req, res, next) {
+router.delete("/:id", checkLogin, checkRole("TEACHER", "ADMIN"), async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var course = await ensureCourseOwnerOrAdmin(req, res, req.params.id);
+    var result;
 
-    var result = await pool.query(
+    if (!course) {
+      return;
+    }
+
+    result = await pool.query(
       "DELETE FROM courses WHERE id = $1 RETURNING id",
       [req.params.id],
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).send({ message: "khong tim thay khoa hoc" });
+      helper.sendError(res, 404, "Course not found");
+      return;
     }
 
-    res.send({
-      message: "xoa khoa hoc thanh cong",
-      id: req.params.id,
+    helper.sendSuccess(res, "Course deleted", {
+      id: result.rows[0].id,
     });
   } catch (error) {
     console.error("delete course error:", error);
-    res.status(500).send({ message: "loi he thong" });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 

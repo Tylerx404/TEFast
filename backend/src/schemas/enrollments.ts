@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const enrollmentStatuses = ["ACTIVE", "COMPLETED", "CANCELLED"];
 
 const enrollmentsSchema = {
@@ -8,7 +6,6 @@ const enrollmentsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     courseId: {
@@ -83,8 +80,10 @@ const enrollmentsSchema = {
 };
 
 const createEnrollmentsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS enrollments (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',

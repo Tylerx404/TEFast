@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const examResultStatuses = ["SUBMITTED", "REVIEWED"];
 
 const examResultsSchema = {
@@ -8,12 +6,12 @@ const examResultsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     examSessionId: {
       dbName: "exam_session_id",
       type: "UUID",
+      ref: "exam_sessions",
       required: [true, "Exam session is required"],
       unique: true,
     },
@@ -112,9 +110,11 @@ const examResultsSchema = {
 };
 
 const createExamResultsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS exam_results (
-  id UUID PRIMARY KEY,
-  exam_session_id UUID NOT NULL UNIQUE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_session_id UUID NOT NULL UNIQUE REFERENCES exam_sessions(id) ON DELETE CASCADE,
   exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   answers JSONB NOT NULL DEFAULT '[]'::jsonb,

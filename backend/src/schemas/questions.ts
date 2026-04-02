@@ -1,5 +1,3 @@
-const { randomUUID } = require("crypto");
-
 const questionSections = [
   "PART_1",
   "PART_2",
@@ -20,7 +18,6 @@ const questionsSchema = {
     id: {
       type: "UUID",
       primaryKey: true,
-      default: () => randomUUID(),
     },
 
     examId: {
@@ -93,8 +90,10 @@ const questionsSchema = {
 };
 
 const createQuestionsTableSql = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS questions (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
   section VARCHAR(20) NOT NULL,
   content TEXT NOT NULL,

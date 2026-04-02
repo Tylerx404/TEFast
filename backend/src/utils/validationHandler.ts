@@ -1,6 +1,7 @@
 var body = require("express-validator").body;
 var validationResult = require("express-validator").validationResult;
 var util = require("util");
+var helper = require("./helper");
 
 var options = {
   password: {
@@ -64,9 +65,17 @@ var validationHandler = {
     var result = validationResult(req);
 
     if (result.errors.length > 0) {
-      res.status(400).send({
-        message: result.errors,
-      });
+      helper.sendError(
+        res,
+        400,
+        "Validation failed",
+        result.errors.map(function (item) {
+          return {
+            field: item.path || item.param || "body",
+            message: item.msg,
+          };
+        }),
+      );
       return;
     }
 

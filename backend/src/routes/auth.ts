@@ -1,15 +1,15 @@
 var express = require("express");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcrypt");
-var crypto = require("crypto");
 var helper = require("../utils/helper");
 var usersModule = require("../schemas/users");
+var coursesModule = require("../schemas/courses");
 var checkLogin = require("../utils/authHandler").checkLogin;
 var validationHandler = require("../utils/validationHandler");
 
 var router = express.Router();
 var JWT_SECRET = process.env.JWT_SECRET || "HUTECH";
-var STUDENT_ROLE_ID = "11111111-1111-1111-1111-111111111111";
+var courseCategories = coursesModule.courseCategories;
 
 function createAccessToken(user) {
   return jwt.sign(
@@ -34,60 +34,81 @@ router.post(
       var pool = req.app.locals.pg;
       var body = req.body || {};
 
-      // Check email đã tồn tại chưa
       var existEmail = await pool.query(
-        "SELECT id FROM users WHERE email = $1",
+        "SELECT id FROM users WHERE email = $1 LIMIT 1",
         [String(body.email).toLowerCase()],
       );
 
       if (existEmail.rows.length > 0) {
-        return res.status(409).send({
-          message: "email da ton tai",
-        });
+        helper.sendError(res, 409, "Email already exists");
+        return;
       }
 
-      // Check username đã tồn tại chưa
-      if (body.username) {
-        var existUsername = await pool.query(
-          "SELECT id FROM users WHERE username = $1",
-          [body.username],
-        );
-
-        if (existUsername.rows.length > 0) {
-          return res.status(409).send({
-            message: "username da ton tai",
-          });
-        }
-      }
-
-      // Hash password
       var passwordPayload = usersModule.userHooks.beforeSave({
         password: body.password,
       });
 
-      var userId = crypto.randomUUID();
       var email = String(body.email).toLowerCase();
       var username = body.username || email.split("@")[0];
+      var existUsername = await pool.query(
+        "SELECT id FROM users WHERE username = $1 LIMIT 1",
+        [username],
+      );
 
-      await pool.query(
-        `INSERT INTO users (id, username, password_hash, email, full_name, role_id, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE')`,
+      if (existUsername.rows.length > 0) {
+        helper.sendError(res, 409, "Username already exists");
+        return;
+      }
+
+      if (
+        body.targetExam !== undefined &&
+        body.targetExam !== null &&
+        !courseCategories.includes(body.targetExam)
+      ) {
+        helper.sendError(res, 422, "Validation failed", [
+          {
+            field: "targetExam",
+            message: "Target exam must be TOEIC or IELTS",
+          },
+        ]);
+        return;
+      }
+
+      var studentRole = await pool.query(
+        "SELECT id FROM roles WHERE name = 'STUDENT' LIMIT 1",
+      );
+
+      if (studentRole.rows.length === 0) {
+        helper.sendError(res, 500, "Student role is missing");
+        return;
+      }
+
+      var createUserResult = await pool.query(
+        `INSERT INTO users (
+          username, password_hash, email, full_name, avatar_url, phone,
+          role_id, status, target_exam, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE', $8, NOW(), NOW())
+        RETURNING id, created_at`,
         [
-          userId,
           username,
           passwordPayload.passwordHash,
           email,
           body.fullName || "",
-          STUDENT_ROLE_ID,
+          body.avatarUrl || "https://i.sstatic.net/l60Hf.png",
+          body.phone || null,
+          studentRole.rows[0].id,
+          courseCategories.includes(body.targetExam) ? body.targetExam : null,
         ],
       );
 
       var user = {
-        id: userId,
-        username: username,
+        id: createUserResult.rows[0].id,
         fullName: body.fullName || "",
         email: email,
         role: "STUDENT",
+        phone: body.phone || null,
+        createdAt: createUserResult.rows[0].created_at,
       };
 
       var accessToken = createAccessToken(user);
@@ -96,17 +117,14 @@ router.post(
         httpOnly: true,
       });
 
-      res.status(201).send({
-        message: "dang ky thanh cong",
+      helper.sendCreated(res, "Register successful", {
         user: user,
         accessToken: accessToken,
         expiresIn: 86400,
       });
     } catch (error) {
       console.error("register error:", error);
-      res.status(500).send({
-        message: "loi he thong",
-      });
+      helper.sendError(res, 500, "Internal server error");
     }
   },
 );
@@ -123,7 +141,7 @@ router.post(
 
       var result = await pool.query(
         `SELECT u.id, u.username, u.password_hash, u.email, u.full_name,
-                u.status, u.is_deleted, r.name AS role_name
+                u.phone, u.avatar_url, u.status, u.is_deleted, r.name AS role_name
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
          WHERE u.email = $1
@@ -132,66 +150,63 @@ router.post(
       );
 
       if (result.rows.length === 0) {
-        return res.status(401).send({
-          message: "email hoac password khong dung",
-        });
+        helper.sendError(res, 401, "Email or password is incorrect");
+        return;
       }
 
       var dbUser = result.rows[0];
 
       if (dbUser.is_deleted) {
-        return res.status(403).send({
-          message: "tai khoan da bi xoa",
-        });
+        helper.sendError(res, 403, "Account has been deleted");
+        return;
       }
 
-      if (dbUser.status === "BLOCKED") {
-        return res.status(403).send({
-          message: "tai khoan da bi khoa",
-        });
+      if (String(dbUser.status || "").toUpperCase() === "BLOCKED") {
+        helper.sendError(res, 403, "Account has been blocked");
+        return;
       }
 
-      // So sánh password
       var isMatch = await bcrypt.compare(body.password, dbUser.password_hash);
 
       if (!isMatch) {
-        return res.status(401).send({
-          message: "email hoac password khong dung",
-        });
+        helper.sendError(res, 401, "Email or password is incorrect");
+        return;
       }
 
-      // Cập nhật login_count và last_login_at
       await pool.query(
-        `UPDATE users SET login_count = login_count + 1, last_login_at = NOW(), updated_at = NOW()
+        `UPDATE users
+         SET login_count = COALESCE(login_count, 0) + 1,
+             last_login_at = NOW(),
+             updated_at = NOW()
          WHERE id = $1`,
         [dbUser.id],
       );
 
       var user = {
         id: dbUser.id,
-        username: dbUser.username,
         fullName: dbUser.full_name,
         email: dbUser.email,
-        role: dbUser.role_name,
+        role: String(dbUser.role_name || "").toUpperCase(),
       };
 
-      var accessToken = createAccessToken(user);
+      var accessToken = createAccessToken({
+        id: dbUser.id,
+        email: dbUser.email,
+        role: String(dbUser.role_name || "").toUpperCase(),
+      });
 
       res.cookie("token", accessToken, {
         httpOnly: true,
       });
 
-      res.send({
-        message: "dang nhap thanh cong",
+      helper.sendSuccess(res, "Login successful", {
         user: user,
         accessToken: accessToken,
         expiresIn: 86400,
       });
     } catch (error) {
       console.error("login error:", error);
-      res.status(500).send({
-        message: "loi he thong",
-      });
+      helper.sendError(res, 500, "Internal server error");
     }
   },
 );
@@ -201,49 +216,38 @@ router.get("/me", checkLogin, async function (req, res, next) {
     var pool = req.app.locals.pg;
 
     var result = await pool.query(
-      `SELECT u.id, u.username, u.email, u.full_name, u.avatar_url,
-              u.phone, u.target_exam, u.status, r.name AS role_name
+      `SELECT u.id, u.email, u.full_name, u.phone, u.avatar_url, r.name AS role_name
        FROM users u
        LEFT JOIN roles r ON r.id = u.role_id
-       WHERE u.id = $1 AND u.is_deleted = FALSE
+       WHERE u.id = $1 AND COALESCE(u.is_deleted, FALSE) = FALSE
        LIMIT 1`,
       [req.userId],
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).send({
-        message: "khong tim thay user",
-      });
+      helper.sendError(res, 404, "User not found");
+      return;
     }
 
     var row = result.rows[0];
 
-    res.send({
-      message: "lay thong tin thanh cong",
-      user: {
-        id: row.id,
-        username: row.username,
-        fullName: row.full_name,
-        email: row.email,
-        role: row.role_name,
-        phone: row.phone,
-        avatarUrl: row.avatar_url,
-        targetExam: row.target_exam,
-      },
+    helper.sendSuccess(res, "Current session fetched", {
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: String(row.role_name || "").toUpperCase(),
+      phone: row.phone,
+      avatarUrl: row.avatar_url,
     });
   } catch (error) {
     console.error("me error:", error);
-    res.status(500).send({
-      message: "loi he thong",
-    });
+    helper.sendError(res, 500, "Internal server error");
   }
 });
 
-router.post("/logout", function (req, res, next) {
+router.post("/logout", checkLogin, function (req, res, next) {
   res.clearCookie("token");
-  res.send({
-    message: "dang xuat thanh cong",
-  });
+  helper.sendSuccess(res, "Logout successful", null);
 });
 
 module.exports = router;
