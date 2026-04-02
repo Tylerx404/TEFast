@@ -1,121 +1,76 @@
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-  type Router,
-} from "express";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { Pool } from "pg";
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const { Pool } = require('pg');
 
-import { authRouter } from "./routes/auth";
-import { commentsRouter } from "./routes/comments";
-import { coursesRouter } from "./routes/courses";
-import { enrollmentsRouter } from "./routes/enrollments";
-import { examResultsRouter } from "./routes/examResults";
-import { examsRouter } from "./routes/exams";
-import { indexRouter } from "./routes/index";
-import { lessonsRouter } from "./routes/lessons";
-import { questionsRouter } from "./routes/questions";
-import { uploadRouter } from "./routes/upload";
-import { usersRouter } from "./routes/users";
-import { vocabularyRouter } from "./routes/vocabulary";
+const app = express();
+const PORT = Number(process.env.PORT) || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
+const DATABASE_URL =
+  process.env.DATABASE_URL || 'postgres://user:password@localhost:5432/tefast_db';
 
-const DEFAULT_PORT = 3001;
-const __dirname = dirname(fileURLToPath(import.meta.url));
+app.disable('x-powered-by');
+app.set('views', path.join(__dirname, '../views'));
+app.set('view engine', 'ejs');
 
-function readNumber(
-  name: string,
-  value: string | undefined,
-  fallback: number,
-): number {
-  if (!value) {
-    return fallback;
-  }
-
-  const parsedValue = Number.parseInt(value, 10);
-
-  if (Number.isNaN(parsedValue) || parsedValue <= 0) {
-    throw new Error(`Invalid numeric environment value for ${name}: ${value}`);
-  }
-
-  return parsedValue;
-}
-
-const env = {
-  appName: process.env.APP_NAME ?? "tefast-backend",
-  nodeEnv: process.env.NODE_ENV ?? "development",
-  host: process.env.HOST ?? "0.0.0.0",
-  port: readNumber("PORT", process.env.PORT, DEFAULT_PORT),
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  redisUrl: process.env.REDIS_URL ?? "",
-};
-
-type RouteRegistration = {
-  path: string;
-  router: Router;
-};
-
-const routeRegistry: RouteRegistration[] = [
-  { path: "/", router: indexRouter },
-  { path: "/auth", router: authRouter },
-  { path: "/users", router: usersRouter },
-  { path: "/courses", router: coursesRouter },
-  { path: "/lessons", router: lessonsRouter },
-  { path: "/exams", router: examsRouter },
-  { path: "/questions", router: questionsRouter },
-  { path: "/exam-results", router: examResultsRouter },
-  { path: "/vocabulary", router: vocabularyRouter },
-  { path: "/comments", router: commentsRouter },
-  { path: "/enrollments", router: enrollmentsRouter },
-  { path: "/upload", router: uploadRouter },
-];
-
-export const app = express();
-
-app.disable("x-powered-by");
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(resolve(__dirname, "../public/uploads")));
-app.set("views", resolve(__dirname, "../views"));
-app.set("view engine", "ejs");
-app.locals.pg = env.databaseUrl
-  ? new Pool({ connectionString: env.databaseUrl })
-  : null;
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '../public')));
 
-for (const route of routeRegistry) {
-  app.use(route.path, route.router);
-}
+// Kết nối PostgreSQL
+const pool = new Pool({
+  connectionString: DATABASE_URL
+});
+app.locals.pg = pool;
+console.log("da connect postgres");
 
-app.use((request: Request, response: Response) => {
-  response.status(404).json({
-    message: `Route not found: ${request.method} ${request.path}`,
+// localhost:3000
+app.use('/', require('./routes/index').indexRouter);
+// localhost:3000/auth
+app.use('/auth', require('./routes/auth').authRouter);
+// localhost:3000/users
+app.use('/users', require('./routes/users').usersRouter);
+// localhost:3000/courses
+app.use('/courses', require('./routes/courses').coursesRouter);
+// localhost:3000/lessons
+app.use('/lessons', require('./routes/lessons').lessonsRouter);
+// localhost:3000/exams
+app.use('/exams', require('./routes/exams').examsRouter);
+// localhost:3000/questions
+app.use('/questions', require('./routes/questions').questionsRouter);
+// localhost:3000/exam-results
+app.use('/exam-results', require('./routes/examResults').examResultsRouter);
+// localhost:3000/comments
+app.use('/comments', require('./routes/comments').commentsRouter);
+// localhost:3000/enrollments
+app.use('/enrollments', require('./routes/enrollments').enrollmentsRouter);
+// localhost:3000/upload
+app.use('/upload', require('./routes/upload').uploadRouter);
+// localhost:3000/vocabulary
+app.use('/vocabulary', require('./routes/vocabulary').vocabularyRouter);
+
+// catch 404 and forward to error handler
+app.use(function (req: any, res: any, next: any) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function (err: any, req: any, res: any, next: any) {
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  res.status(err.status || 500);
+  res.send({
+    message: err.message
   });
 });
 
-app.use(
-  (
-    error: unknown,
-    request: Request,
-    response: Response,
-    _next: NextFunction,
-  ) => {
-    console.error("Unhandled request error", {
-      method: request.method,
-      path: request.path,
-      error,
-    });
-
-    response.status(500).json({
-      message: "Internal server error",
-    });
-  },
-);
-
-if (import.meta.main) {
-  app.listen(env.port, env.host, () => {
-    console.log(
-      `${env.appName} listening on http://${env.host}:${env.port} (${env.nodeEnv})`,
-    );
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running at http://${HOST}:${PORT}`);
   });
 }
+
+module.exports = app;
