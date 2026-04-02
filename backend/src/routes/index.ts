@@ -1,23 +1,31 @@
-import { Router } from "express";
+var express = require("express");
 
-export const indexRouter = Router();
+var router = express.Router();
 
-indexRouter.get("/", (_request, response) => {
-  response.json({
-    service: process.env.APP_NAME ?? "tefast-backend",
+router.get("/", function (req, res, next) {
+  res.render("index", {
+    title: process.env.APP_NAME || "TEFast",
     message: "TEFast backend is running",
   });
 });
 
-indexRouter.get("/health", (_request, response) => {
-  response.json({
-    service: process.env.APP_NAME ?? "tefast-backend",
-    status: "ok",
-    runtime: "bun",
-    timestamp: new Date().toISOString(),
-    dependencies: {
-      postgres: process.env.DATABASE_URL ? "configured" : "missing",
-      redis: process.env.REDIS_URL ? "configured" : "missing",
-    },
+router.get("/home", function (req, res, next) {
+  res.render("index", {
+    title: process.env.APP_NAME || "TEFast",
+    message: "TEFast backend is running",
   });
 });
+
+router.get("/health", function (req, res, next) {
+  res.send({
+    message: "server dang chay",
+    service: process.env.APP_NAME || "tefast-backend",
+    status: "ok",
+    runtime: "bun",
+    postgres: process.env.DATABASE_URL ? "configured" : "missing",
+    redis: process.env.REDIS_URL ? "configured" : "missing",
+    time: new Date().toISOString(),
+  });
+});
+
+module.exports = router;
