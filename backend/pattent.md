@@ -7,7 +7,7 @@ Day khong phai MVC thuan. Day la kieu `MVC-lite / Transaction Script`:
 
 - `app.ts` la entry point duy nhat.
 - `routes/` vua dinh tuyen, vua chua route handler.
-- Khong tach `controller/` rieng.
+- khong tach `controller/` rieng.
 - `schemas/` la noi dinh nghia schema va model cua tung module.
 - `utils/` chua cac concern dung chung.
 
@@ -31,16 +31,16 @@ Thu muc backend duoc to chuc theo khung sau:
 
 ```text
 backend/
-├── public/
-│   └── uploads/
-├── src/
-│   ├── app.ts
-│   ├── routes/
-│   ├── schemas/
-│   └── utils/
-├── views/
-├── package.json
-└── tsconfig.json
+|-- public/
+|   `-- uploads/
+|-- src/
+|   |-- app.ts
+|   |-- routes/
+|   |-- schemas/
+|   `-- utils/
+|-- views/
+|-- package.json
+`-- tsconfig.json
 ```
 
 ## 4. Vai tro tung phan
@@ -53,7 +53,7 @@ backend/
 - doc bien moi truong
 - dang ky middleware chung
 - mount static files va views
-- tao `route registry`
+- khoi tao ket noi PostgreSQL
 - mount tat ca routers trong `routes/`
 - gan error handler
 - khoi dong HTTP server
@@ -87,26 +87,34 @@ Moi file route:
 
 Khong tao `controller/` rieng.
 
-## 5. Route registry pattern
+### `src/schemas/`
 
-He thong dung `route registry` tai `app.ts`.
+`schemas/` la noi mo ta cau truc du lieu cua tung module.
+Day la schema custom cho PostgreSQL, khong phai schema Mongoose.
+
+Style code hien tai cua `schemas/` la:
+
+- `require(...)`
+- `module.exports`
+- field object voi `required`, `default`, `enum`, `ref`
+- co kem `create...TableSql` cho Postgres
+
+## 5. Route mount pattern
+
+He thong hien tai mount router truc tiep tai `app.ts`.
 Mau to chuc:
 
 ```ts
-const routeRegistry = [
-  { path: "/", router: indexRouter },
-  { path: "/auth", router: authRouter },
-  { path: "/users", router: usersRouter },
-];
+app.use('/', require('./routes/index').indexRouter);
+app.use('/auth', require('./routes/auth').authRouter);
+app.use('/users', require('./routes/users').usersRouter);
 ```
-
-Sau do `app.ts` mount toan bo registry vao Express app.
 
 Muc dich:
 
 - giu `app.ts` ro rang
 - nhin nhanh duoc toan bo module dang ton tai
-- them module moi de dang
+- hop voi style code cu ma project dang theo
 
 ## 6. Logic xu ly nghiep vu
 
@@ -134,19 +142,6 @@ Quy uoc:
 - truy cap database thong qua `pg`
 - `schemas/` duoc giu lai theo quy uoc do an
 - model duoc tao tu schema, nen khong doi ten thu muc nay sang `models/`
-
-`schemas/` la noi mo ta cau truc du lieu cua tung module, gom:
-
-- roles
-- users
-- courses
-- lessons
-- exams
-- questions
-- examResults
-- vocabulary
-- comments
-- enrollments
 
 ## 8. Utilities va middleware dung chung
 
@@ -195,6 +190,6 @@ Khi them module moi, uu tien theo thu tu:
 1. Tao file route moi trong `routes/`
 2. Tao schema tuong ung trong `schemas/`
 3. Them helper dung chung neu can trong `utils/`
-4. Dang ky router vao `route registry` trong `app.ts`
+4. Mount router moi vao `app.ts`
 
 Khong tu y them cac tang khac ngoai pattern nay neu chua can thiet.

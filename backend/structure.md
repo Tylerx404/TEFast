@@ -1,45 +1,261 @@
-BÁO CÁO ĐỒ ÁN: TEFast — Web Học Tiếng Anh TOEIC & IELTS (Backend TypeScript)1. Tổng quan đồ án1.1. Giới thiệuTEFast là nền tảng học tiếng Anh trực tuyến chuyên biệt cho hai kỳ thi phổ biến nhất tại Việt Nam: TOEIC (Test of English for International Communication) và IELTS (International English Language Testing System).
-Hệ thống cho phép giáo viên tạo khóa học, đề thi, từ vựng và học viên đăng ký học, luyện đề, theo dõi tiến độ.1.2. Mục tiêuXây dựng hệ thống web full-stack với backend REST API.Chia rõ 2 lớp học: TOEIC và IELTS, mỗi lớp có khóa học, đề thi, từ vựng riêng.Đảm bảo đầy đủ chức năng: CRUD, Authentication, Authorization, Upload file.1.3. Công nghệ sử dụngBackend: Node.js, Express.js, TypeScript.Database: MongoDB, Mongoose ODM.Xác thực: JWT (jsonwebtoken), bcryptjs.Upload file: Multer.Gửi mail: Nodemailer.2. Cấu trúc Backend (TypeScript)Dựa trên cấu trúc ban đầu, thư mục bin đã được loại bỏ. File app.ts sẽ đảm nhận cả vai trò cấu hình Express và khởi tạo HTTP server. Toàn bộ các file logic được chuyển sang định dạng .ts.
+# TEFast Backend Structure
 
-├─ app.ts                 # Entry point: Khởi tạo HTTP server, kết nối DB, cấu hình Express
-├─ routes/                # Các endpoint REST API
-│  ├─ index.ts
-│  ├─ auth.ts
-│  ├─ users.ts
-│  ├─ courses.ts
-│  ├─ lessons.ts
-│  ├─ exams.ts
-│  ├─ questions.ts
-│  ├─ examResults.ts
-│  ├─ vocabulary.ts
-│  ├─ comments.ts
-│  ├─ enrollments.ts
-│  └─ upload.ts
-├─ schemas/               # Mongoose Schemas & TypeScript Interfaces
-│  ├─ roles.ts
-│  ├─ users.ts
-│  ├─ courses.ts
-│  ├─ lessons.ts
-│  ├─ exams.ts
-│  ├─ questions.ts
-│  ├─ examResults.ts
-│  ├─ vocabulary.ts
-│  ├─ comments.ts
-│  └─ enrollments.ts
-├─ utils/                 # Các hàm tiện ích dùng chung
-│  ├─ authHandler.ts
-│  ├─ validationHandler.ts
-│  ├─ uploadHandler.ts
-│  ├─ mailHandler.ts
-│  └─ helper.ts
-├─ public/                # File tĩnh được upload
-│  └─ uploads/
-│     ├─ images/
-│     ├─ audio/
-│     └─ docs/
-├─ views/                 # Template EJS
-├─ .env                   # Biến môi trường
-├─ tsconfig.json          # File cấu hình TypeScript (Thêm mới)
-├─ package.json
-└─ package-lock.json
-1. Vai trò các thư mục & Lưu ý khi dùng TypeScriptapp.ts: Thay thế cho bin/www và app.js cũ. File này chịu trách nhiệm kết nối MongoDB, gắn middleware, mount routes, xử lý lỗi và trực tiếp khởi tạo server (lắng nghe port).routes/: Định nghĩa tất cả REST endpoints và xử lý CRUD. Trong TypeScript, các tham số req, res, next sẽ được ép kiểu rõ ràng bằng Request, Response, NextFunction từ module express.schemas/: Định nghĩa Mongoose Schema (validation, index, methods). Đặc biệt trong TypeScript, thư mục này đồng thời chứa các Interface mô tả chi tiết kiểu dữ liệu của Document (ví dụ: IUser, ICourse) để sử dụng trong toàn dự án.utils/: Chứa các hàm hỗ trợ chung (xác thực JWT, phân quyền, validate input, cấu hình Multer, phân trang).public/ & views/: Lưu trữ file tĩnh (ảnh, audio, tài liệu) và EJS template.Lưu ý TypeScript: Quá trình xác thực JWT sẽ gắn thông tin user vào req.user. Bạn sẽ cần tạo một file định nghĩa type (ví dụ types/express/index.d.ts) để mở rộng interface Request của Express nhằm tránh lỗi Type Checking khi gọi req.user.4. Hệ thống phân quyền — 3 RolesHệ thống quản lý quyền truy cập qua collection roles độc lập. Trường role trong schema users tham chiếu (ObjectId) tới collection này. Khi xác thực, middleware tiến hành populate và kiểm tra req.user.role.name.Student: Xem khóa học, đăng ký học, làm bài thi, nộp bài, xem kết quả cá nhân và bình luận.Teacher: Toàn bộ quyền của student. Bổ sung quyền tạo/sửa/xóa tài nguyên học tập (khóa học, bài học, đề thi, câu hỏi, từ vựng) do mình tạo ra, xem kết quả học viên, upload file.Admin: Toàn quyền hệ thống, quản lý tài khoản user và phân quyền.5. Cơ chế phân chia TOEIC & IELTSHệ thống không chia nhỏ thành các database độc lập. Cơ chế phân luồng hoạt động thông qua trường category (Enum: ['TOEIC', 'IELTS']) tại 3 schema nền tảng:courses: Phân biệt khóa học.exams: Phân biệt đề thi.vocabulary: Phân biệt bộ từ vựng.Các entity con (như lessons, questions) không cần trường này do luôn được kế thừa phân loại từ khóa học hoặc đề thi gốc.6. Tổng quan API Endpoints (Tổng cộng: 53) Hệ thống bao gồm 53 endpoints chính, cung cấp đầy đủ chức năng quản trị và học tập:Auth (3 endpoints): Đăng ký, đăng nhập và lấy thông tin phiên (/me).Users (5 endpoints): Quản lý hồ sơ cá nhân và danh sách người dùng (Admin).Courses (6 endpoints): Xem, lọc theo TOEIC/IELTS và CRUD khóa học.Lessons (5 endpoints): Quản lý nội dung học tập bên trong khóa học.Exams (6 endpoints): Xử lý các loại bài kiểm tra (Mini Test, Full Test, Practice).Questions (5 endpoints): Ngân hàng câu hỏi thuộc các đề thi.Exam Results (5 endpoints): Ghi nhận quá trình nộp bài, chấm tự động và tra cứu kết quả.Vocabulary (6 endpoints): Ngân hàng từ vựng có hỗ trợ bộ lọc và full-text search.Comments (5 endpoints): Quản lý tương tác, hỏi đáp (hỗ trợ nested reply qua parentComment).Enrollments (5 endpoints): Đăng ký khóa học và lưu trữ tiến độ (Progress tracking).Upload (2 endpoints): Lưu trữ file đơn hoặc mảng file (tối đa 5 file) lên server.
+## 1. Tong quan
+
+Backend TEFast duoc to chuc theo huong `module-based Express` chay tren `Bun`.
+Day khong phai MVC thuan. Day la kieu `MVC-lite / Transaction Script`:
+
+- `app.ts` la file bootstrap chinh va cung la entry point chay server.
+- `routes/` vua dinh tuyen, vua chua route handler.
+- khong tach `controller/` rieng.
+- `schemas/` duoc giu theo quy uoc do an.
+- `utils/` chua middleware va helper dung chung.
+
+He thong hien tai su dung:
+
+- Runtime: `Bun`
+- HTTP framework: `Express`
+- Database: `PostgreSQL`
+- Driver: `pg`
+- Auth: `jsonwebtoken`, `bcrypt`
+- Validation: `express-validator`
+- Upload: `multer`
+- Mail: `nodemailer`
+- View engine: `ejs`
+
+He thong khong bao gom:
+
+- chat realtime
+- websocket
+- socket.io
+- mongoose
+- mongodb
+
+## 2. Nguyen tac kien truc
+
+Backend duoc to chuc theo cac nguyen tac sau:
+
+1. `app.ts` bootstrap Express app, khoi tao ket noi database, mount router va tu chay server.
+2. Tat ca module nghiep vu duoc khai bao trong `routes/`.
+3. Logic duoc phep viet truc tiep trong route handler.
+4. Neu logic duoc tai su dung nhieu noi thi tach sang `utils/`.
+5. `schemas/` la noi mo ta schema/model cua tung module theo kieu custom cua do an.
+6. Khong them `controller/`, `service/`, `repository/` neu chua that su can.
+
+## 3. Cau truc thu muc
+
+```text
+backend/
+|-- public/
+|   `-- uploads/
+|       |-- images/
+|       |-- audio/
+|       `-- docs/
+|-- src/
+|   |-- app.ts
+|   |-- routes/
+|   |   |-- index.ts
+|   |   |-- auth.ts
+|   |   |-- users.ts
+|   |   |-- courses.ts
+|   |   |-- lessons.ts
+|   |   |-- exams.ts
+|   |   |-- questions.ts
+|   |   |-- examResults.ts
+|   |   |-- vocabulary.ts
+|   |   |-- comments.ts
+|   |   |-- enrollments.ts
+|   |   `-- upload.ts
+|   |-- schemas/
+|   |   |-- roles.ts
+|   |   |-- users.ts
+|   |   |-- courses.ts
+|   |   |-- lessons.ts
+|   |   |-- exams.ts
+|   |   |-- questions.ts
+|   |   |-- examResults.ts
+|   |   |-- vocabulary.ts
+|   |   |-- comments.ts
+|   |   `-- enrollments.ts
+|   `-- utils/
+|       |-- authHandler.ts
+|       |-- validationHandler.ts
+|       |-- uploadHandler.ts
+|       |-- mailHandler.ts
+|       `-- helper.ts
+|-- views/
+|-- .env.example
+|-- Dockerfile
+|-- package.json
+|-- pattent.md
+|-- README.md
+`-- tsconfig.json
+```
+
+Luu y:
+
+- Khong co `src/server.ts` trong cau truc hien tai.
+- `app.ts` dang la file duy nhat de start backend.
+- `bun.lock` nam o root workspace cua monorepo, khong nam rieng trong `backend/`.
+
+## 4. Vai tro tung phan
+
+### `src/app.ts`
+
+`app.ts` la noi:
+
+- khoi tao Express app
+- doc `PORT`, `HOST`, `DATABASE_URL`
+- khoi tao `Pool` cua PostgreSQL
+- dang ky middleware chung
+- mount static files trong `public/`
+- dang ky view engine `ejs`
+- mount tat ca routers trong `routes/`
+- gan 404 handler va error handler
+- tu khoi dong HTTP server khi chay truc tiep
+- export `app` de co the tai su dung neu can
+
+### `src/routes/`
+
+Moi file route dai dien cho mot module nghiep vu.
+
+Moi file:
+
+- export `Router`
+- tu khai bao endpoint
+- tu xu ly nghiep vu trong route handler
+- co the goi helper tu `utils/`
+- co the thao tac truc tiep voi schema/model cua module
+
+Backend khong dung `controller/` rieng.
+
+### `src/schemas/`
+
+`schemas/` la noi dinh nghia schema/model cho tung module.
+Du backend dung PostgreSQL, ten thu muc nay van duoc giu theo quy uoc do an.
+
+Schema hien tai duoc viet theo kieu cu:
+
+- `require(...)`
+- `module.exports`
+- field object dung cac key nhu `required`, `default`, `enum`, `ref`
+
+Nhung ve ban chat van la schema custom cho PostgreSQL, khong phai Mongoose.
+
+### `src/utils/`
+
+`utils/` chua concern dung chung:
+
+- `authHandler.ts`: xac thuc va phan quyen
+- `validationHandler.ts`: validation middleware
+- `uploadHandler.ts`: upload config
+- `mailHandler.ts`: gui mail
+- `helper.ts`: helper nho dung chung
+
+Nguyen tac:
+
+- middleware dung chung thi dat o `utils/`
+- route nao can thi import vao route do
+- khong dua logic rieng cua 1 module vao `app.ts`
+
+### `public/`
+
+Noi luu file upload:
+
+- images
+- audio
+- docs
+
+### `views/`
+
+`views/` chua cac file EJS phuc vu render neu can.
+
+## 5. Route mount pattern
+
+He thong hien tai mount router truc tiep trong `app.ts`.
+Mau to chuc:
+
+```ts
+app.use('/', require('./routes/index').indexRouter);
+app.use('/auth', require('./routes/auth').authRouter);
+app.use('/users', require('./routes/users').usersRouter);
+```
+
+Muc dich:
+
+- de doc
+- de doi chieu endpoint nhanh
+- hop voi style code cu ma project dang theo
+
+## 6. Workflow xu ly trong code
+
+Workflow chung cua backend:
+
+1. Request vao `app.ts`
+2. Middleware chung xu ly body, cookie, static file
+3. Request duoc dieu huong den route tuong ung
+4. Route handler xu ly nghiep vu truc tiep
+5. Route co the goi `utils/` va `schemas/`
+6. Ket qua tra ve JSON response hoac view neu can
+
+Pattern nay uu tien:
+
+- don gian
+- de doc
+- de lam do an
+- de mo rong theo module
+
+## 7. Phan quyen
+
+He thong co 3 role:
+
+- `STUDENT`
+- `TEACHER`
+- `ADMIN`
+
+Quy uoc quyen:
+
+- `STUDENT`: hoc, thi, dang ky khoa hoc, xem ket qua, binh luan
+- `TEACHER`: toan bo quyen cua student + CRUD hoc lieu minh quan ly
+- `ADMIN`: toan quyen he thong
+
+## 8. Phan chia TOEIC / IELTS
+
+He thong khong tach thanh database rieng cho TOEIC va IELTS.
+Phan chia nghiep vu thong qua truong `category`:
+
+- `TOEIC`
+- `IELTS`
+
+Ap dung chu yeu cho:
+
+- `courses`
+- `exams`
+- `vocabulary`
+
+## 9. Quy tac mo rong he thong
+
+Khi them module moi:
+
+1. Tao file route moi trong `routes/`
+2. Tao schema tuong ung trong `schemas/`
+3. Tao helper/middleware trong `utils/` neu can
+4. Mount router moi vao `app.ts`
+
+Khong tu y them:
+
+- `controller/`
+- `service/`
+- `repository/`
+- `models/`
+
+neu chua co nhu cau that su.
+
+## 10. Trang thai hien tai
+
+Structure hien tai phai duoc hieu la:
+
+- day la khung backend chinh thuc dang chay
+- `structure.md` mo ta cau truc va cach to chuc file
+- `pattent.md` la tai lieu pattern tom tat
+- `doc.md` o root project la tai lieu workflow + API contract
