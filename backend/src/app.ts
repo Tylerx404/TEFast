@@ -1,6 +1,28 @@
-type RouteHandler = () => Response;
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+  type Router,
+} from "express";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Pool } from "pg";
+
+import { authRouter } from "./routes/auth";
+import { commentsRouter } from "./routes/comments";
+import { coursesRouter } from "./routes/courses";
+import { enrollmentsRouter } from "./routes/enrollments";
+import { examResultsRouter } from "./routes/examResults";
+import { examsRouter } from "./routes/exams";
+import { indexRouter } from "./routes/index";
+import { lessonsRouter } from "./routes/lessons";
+import { questionsRouter } from "./routes/questions";
+import { uploadRouter } from "./routes/upload";
+import { usersRouter } from "./routes/users";
+import { vocabularyRouter } from "./routes/vocabulary";
 
 const DEFAULT_PORT = 3001;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function readNumber(
   name: string,
@@ -29,97 +51,71 @@ const env = {
   redisUrl: process.env.REDIS_URL ?? "",
 };
 
-function json(data: unknown, init: ResponseInit = {}): Response {
-  const headers = new Headers();
+type RouteRegistration = {
+  path: string;
+  router: Router;
+};
 
-  if (init.headers instanceof Headers) {
-    init.headers.forEach((value, key) => headers.set(key, value));
-  } else if (Array.isArray(init.headers)) {
-    for (const [key, value] of init.headers) {
-      headers.set(key, value);
-    }
-  } else if (init.headers) {
-    for (const [key, value] of Object.entries(init.headers)) {
-      if (typeof value === "string") {
-        headers.set(key, value);
-      }
-    }
-  }
+const routeRegistry: RouteRegistration[] = [
+  { path: "/", router: indexRouter },
+  { path: "/auth", router: authRouter },
+  { path: "/users", router: usersRouter },
+  { path: "/courses", router: coursesRouter },
+  { path: "/lessons", router: lessonsRouter },
+  { path: "/exams", router: examsRouter },
+  { path: "/questions", router: questionsRouter },
+  { path: "/exam-results", router: examResultsRouter },
+  { path: "/vocabulary", router: vocabularyRouter },
+  { path: "/comments", router: commentsRouter },
+  { path: "/enrollments", router: enrollmentsRouter },
+  { path: "/upload", router: uploadRouter },
+];
 
-  if (!headers.has("content-type")) {
-    headers.set("content-type", "application/json; charset=utf-8");
-  }
+export const app = express();
 
-  return new Response(JSON.stringify(data), {
-    ...init,
-    headers,
-  });
+app.disable("x-powered-by");
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(resolve(__dirname, "../public/uploads")));
+app.set("views", resolve(__dirname, "../views"));
+app.set("view engine", "ejs");
+app.locals.pg = env.databaseUrl
+  ? new Pool({ connectionString: env.databaseUrl })
+  : null;
+
+for (const route of routeRegistry) {
+  app.use(route.path, route.router);
 }
 
-const routeHandlers = new Map<string, RouteHandler>([
-  [
-    "GET /",
-    () =>
-      json({
-        service: env.appName,
-        message: "TEFast backend is running",
-      }),
-  ],
-  [
-    "GET /health",
-    () =>
-      json({
-        service: env.appName,
-        status: "ok",
-        runtime: "bun",
-        timestamp: new Date().toISOString(),
-        dependencies: {
-          postgres: env.databaseUrl ? "configured" : "missing",
-          redis: env.redisUrl ? "configured" : "missing",
-        },
-      }),
-  ],
-]);
+app.use((request: Request, response: Response) => {
+  response.status(404).json({
+    message: `Route not found: ${request.method} ${request.path}`,
+  });
+});
 
-export function app(request: Request): Response {
-  const url = new URL(request.url);
-  const routeKey = `${request.method.toUpperCase()} ${url.pathname}`;
-  const routeHandler = routeHandlers.get(routeKey);
-
-  if (!routeHandler) {
-    return json(
-      {
-        message: `Route not found: ${routeKey}`,
-      },
-      { status: 404 },
-    );
-  }
-
-  try {
-    return routeHandler();
-  } catch (error) {
+app.use(
+  (
+    error: unknown,
+    request: Request,
+    response: Response,
+    _next: NextFunction,
+  ) => {
     console.error("Unhandled request error", {
-      route: routeKey,
+      method: request.method,
+      path: request.path,
       error,
     });
 
-    return json(
-      {
-        message: "Internal server error",
-      },
-      { status: 500 },
-    );
-  }
-}
+    response.status(500).json({
+      message: "Internal server error",
+    });
+  },
+);
 
 if (import.meta.main) {
-  const server = Bun.serve({
-    fetch: app,
-    hostname: env.host,
-    port: env.port,
+  app.listen(env.port, env.host, () => {
+    console.log(
+      `${env.appName} listening on http://${env.host}:${env.port} (${env.nodeEnv})`,
+    );
   });
-
-  console.log(
-    `${env.appName} listening on http://${server.hostname}:${server.port} (${env.nodeEnv})`,
-  );
 }
