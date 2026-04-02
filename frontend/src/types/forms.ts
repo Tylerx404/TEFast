@@ -106,3 +106,15 @@ export type TeacherVocabularyFormValues = {
   audioUrl: string;
   imageUrl: string;
 };
+
+export type AdminUserFilters = {
+  page?: string;
+  limit?: string;
+  role?: string;
+  keyword?: string;
+  status?: string;
+};
+
+export type AdminRoleFormValues = {
+  role: "STUDENT" | "TEACHER" | "ADMIN";
+};

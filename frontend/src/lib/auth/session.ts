@@ -29,10 +29,26 @@ export function isTeacherRole(
   return user?.role === "TEACHER" || user?.role === "ADMIN";
 }
 
+export function isAdminRole(
+  user: Pick<SessionUser, "role"> | null | undefined,
+) {
+  return user?.role === "ADMIN";
+}
+
 export async function requireTeacherSession(redirectTo: string) {
   const session = await requireSession(redirectTo);
 
   if (!isTeacherRole(session)) {
+    redirect("/my-courses");
+  }
+
+  return session;
+}
+
+export async function requireAdminSession(redirectTo: string) {
+  const session = await requireSession(redirectTo);
+
+  if (!isAdminRole(session)) {
     redirect("/my-courses");
   }
 

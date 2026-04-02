@@ -17,6 +17,42 @@ export type UserProfile = SessionUser & {
   updatedAt?: string;
 };
 
+export type AdminUserListItem = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole | string;
+  status: string;
+  createdAt: string;
+};
+
+export type AdminUserDetail = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole | string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserRoleUpdateInput = {
+  role: UserRole;
+};
+
+export type SystemHealth = {
+  service: string;
+  status: string;
+  runtime: string;
+  timestamp: string;
+  dependencies: {
+    postgres: string;
+    redis: string;
+  };
+};
+
 export type TeacherSummary = {
   id: string;
   fullName: string;

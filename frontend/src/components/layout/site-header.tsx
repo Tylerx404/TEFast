@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { UserNav } from "@/components/layout/user-nav";
-import { isTeacherRole } from "@/lib/auth/session";
+import { isAdminRole, isTeacherRole } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types/domain";
 
@@ -28,7 +28,10 @@ const appLinks = [
 
 export function SiteHeader({ session }: { session: SessionUser | null }) {
   const roleLinks = isTeacherRole(session)
-    ? [{ href: "/teacher", label: "Teacher" }]
+    ? [
+        { href: "/teacher", label: "Teacher" },
+        ...(isAdminRole(session) ? [{ href: "/admin", label: "Admin" }] : []),
+      ]
     : [];
   const links = session
     ? [...publicLinks, ...appLinks, ...roleLinks]
