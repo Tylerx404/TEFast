@@ -51,6 +51,19 @@ export type CourseDetail = CourseListItem & {
   } | null;
 };
 
+export type CourseCreateInput = {
+  title: string;
+  slug: string;
+  description: string;
+  category: ExamCategory;
+  level: string;
+  price: number;
+  thumbnailUrl: string;
+  isPublished: boolean;
+};
+
+export type CourseUpdateInput = Partial<CourseCreateInput>;
+
 export type EnrollmentItem = {
   id: string;
   courseId: string;
@@ -81,6 +94,21 @@ export type LessonDetail = {
   isPreview: boolean;
 };
 
+export type LessonCreateInput = {
+  title: string;
+  contentType: string;
+  content: string;
+  attachmentUrl: string;
+  orderIndex: number;
+  isPreview: boolean;
+};
+
+export type LessonUpdateInput = Partial<LessonCreateInput>;
+
+export type LessonOrderUpdateInput = {
+  orderIndex: number;
+};
+
 export type ExamListItem = {
   id: string;
   title: string;
@@ -94,6 +122,17 @@ export type ExamDetail = ExamListItem & {
   instructions?: string | null;
   courseId?: string | null;
 };
+
+export type ExamCreateInput = {
+  courseId: string;
+  title: string;
+  category: ExamCategory;
+  examType: string;
+  durationMinutes: number;
+  instructions: string;
+};
+
+export type ExamUpdateInput = Partial<Omit<ExamCreateInput, "courseId">>;
 
 export type ExamSession = {
   examSessionId: string;
@@ -113,6 +152,21 @@ export type QuestionItem = {
   imageUrl?: string | null;
   explanation?: string | null;
 };
+
+export type QuestionDetail = QuestionItem & {
+  correctAnswer?: string | null;
+};
+
+export type QuestionCreateInput = {
+  section: string;
+  content: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  orderIndex: number;
+};
+
+export type QuestionUpdateInput = Partial<QuestionCreateInput>;
 
 export type ExamAnswerPayload = {
   questionId: string;
@@ -139,6 +193,31 @@ export type ExamResultDetail = {
   submittedAt: string;
 };
 
+export type CourseEnrollmentItem = {
+  id: string;
+  user: {
+    id: string;
+    fullName: string;
+  };
+  progressPercent: number;
+  status: string;
+};
+
+export type TeacherExamResultItem = {
+  id: string;
+  user: {
+    id: string;
+    fullName: string;
+  };
+  score: number;
+  submittedAt: string;
+};
+
+export type ExamResultReviewInput = {
+  feedback: string;
+  manualScore: number;
+};
+
 export type VocabularyItem = {
   id: string;
   word: string;
@@ -150,6 +229,28 @@ export type VocabularyItem = {
   example?: string | null;
   audioUrl?: string | null;
   imageUrl?: string | null;
+};
+
+export type VocabularyCreateInput = {
+  word: string;
+  phonetic: string;
+  meaning: string;
+  example: string;
+  category: ExamCategory;
+  topic: string;
+  level: string;
+  audioUrl: string;
+  imageUrl: string;
+};
+
+export type VocabularyUpdateInput = Partial<VocabularyCreateInput>;
+
+export type UploadFileItem = {
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
 };
 
 export type CommentItem = {

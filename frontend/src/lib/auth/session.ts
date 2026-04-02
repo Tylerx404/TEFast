@@ -22,3 +22,19 @@ export async function requireSession(redirectTo: string) {
 
   return session;
 }
+
+export function isTeacherRole(
+  user: Pick<SessionUser, "role"> | null | undefined,
+) {
+  return user?.role === "TEACHER" || user?.role === "ADMIN";
+}
+
+export async function requireTeacherSession(redirectTo: string) {
+  const session = await requireSession(redirectTo);
+
+  if (!isTeacherRole(session)) {
+    redirect("/my-courses");
+  }
+
+  return session;
+}

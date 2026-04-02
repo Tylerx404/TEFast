@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { UserNav } from "@/components/layout/user-nav";
+import { isTeacherRole } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types/domain";
 
@@ -26,7 +27,12 @@ const appLinks = [
 ];
 
 export function SiteHeader({ session }: { session: SessionUser | null }) {
-  const links = session ? [...publicLinks, ...appLinks] : publicLinks;
+  const roleLinks = isTeacherRole(session)
+    ? [{ href: "/teacher", label: "Teacher" }]
+    : [];
+  const links = session
+    ? [...publicLinks, ...appLinks, ...roleLinks]
+    : publicLinks;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/90 backdrop-blur">

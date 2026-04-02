@@ -8,6 +8,7 @@ const protectedPrefixes = [
   "/my-courses",
   "/learn",
   "/results",
+  "/teacher",
 ];
 
 function isProtectedPath(pathname: string) {
@@ -38,5 +39,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/me/:path*", "/my-courses/:path*", "/learn/:path*", "/results/:path*", "/exams/:path*"],
+  matcher: [
+    "/me/:path*",
+    "/my-courses/:path*",
+    "/learn/:path*",
+    "/results/:path*",
+    "/teacher/:path*",
+    "/exams/:path*",
+  ],
 };
