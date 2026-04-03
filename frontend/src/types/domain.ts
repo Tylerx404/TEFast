@@ -106,6 +106,7 @@ export type EnrollmentItem = {
   courseId: string;
   courseTitle: string;
   progressPercent: number;
+  lastLessonId?: string | null;
   status: string;
 };
 

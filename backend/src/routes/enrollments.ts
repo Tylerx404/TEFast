@@ -111,6 +111,7 @@ router.get("/my", checkLogin, async function (req, res, next) {
         courseId: row.course_id,
         courseTitle: row.course_title,
         progressPercent: readEnrollmentProgress(row),
+        lastLessonId: row.last_lesson_id,
         status: row.status,
       };
     });

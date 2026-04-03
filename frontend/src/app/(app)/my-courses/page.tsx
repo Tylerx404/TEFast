@@ -43,7 +43,15 @@ export default async function MyCoursesPage() {
                     <Link href={`/courses/${item.courseId}`}>Xem chi tiết khóa học</Link>
                   </Button>
                   <Button variant="outline" asChild>
-                    <Link href={`/courses/${item.courseId}`}>Đi đến lesson</Link>
+                    <Link
+                      href={
+                        item.lastLessonId
+                          ? `/learn/${item.courseId}/lessons/${item.lastLessonId}`
+                          : `/courses/${item.courseId}`
+                      }
+                    >
+                      Tiếp tục học
+                    </Link>
                   </Button>
                 </div>
               </CardContent>

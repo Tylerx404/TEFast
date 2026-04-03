@@ -30,7 +30,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   ]);
 
   const enrollmentList = session
-    ? await getMyEnrollments({ limit: "100", status: "ACTIVE" })
+    ? await getMyEnrollments({ limit: "100" })
     : null;
   const isEnrolled = Boolean(
     enrollmentList?.data?.some((item) => item.courseId === id),

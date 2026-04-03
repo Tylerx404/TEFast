@@ -2,12 +2,14 @@ import Link from "next/link";
 import { Download, PlayCircle } from "lucide-react";
 
 import { EmptyState } from "@/components/app/empty-state";
+import { LessonProgressTracker } from "@/components/app/lesson-progress-tracker";
 import { PageShell } from "@/components/app/page-shell";
 import { CommentThread } from "@/components/forms/comment-thread";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCourse, getCourseLessons } from "@/features/courses/api";
+import { getMyEnrollments } from "@/features/enrollments/api";
 import { getLessonComments, getLesson } from "@/features/lessons/api";
 import { getSession, requireSession } from "@/lib/auth/session";
 
@@ -23,13 +25,26 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const redirectTo = `/learn/${courseId}/lessons/${lessonId}`;
 
   await requireSession(redirectTo);
-  const [course, lessons, lesson, comments, session] = await Promise.all([
+  const [course, lessons, lesson, comments, session, enrollments] = await Promise.all([
     getCourse(courseId),
     getCourseLessons(courseId, true),
     getLesson(lessonId),
     getLessonComments(courseId, lessonId),
     getSession(),
+    getMyEnrollments({ limit: "100" }),
   ]);
+
+  const currentLessonIndex =
+    lessons?.data?.findIndex((item) => item.id === lessonId) ?? -1;
+  const enrollment = enrollments?.data?.find((item) => item.courseId === courseId) ?? null;
+  const progressPercent =
+    lessons?.data?.length && currentLessonIndex >= 0
+      ? Number((((currentLessonIndex + 1) / lessons.data.length) * 100).toFixed(2))
+      : 0;
+  const progressStatus =
+    lessons?.data?.length && currentLessonIndex === lessons.data.length - 1
+      ? "COMPLETED"
+      : "ACTIVE";
 
   if (!lesson?.data) {
     return (
@@ -46,6 +61,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
   return (
     <PageShell className="gap-6">
+      {enrollment ? (
+        <LessonProgressTracker
+          enrollmentId={enrollment.id}
+          lessonId={lessonId}
+          progressPercent={progressPercent}
+          status={progressStatus}
+        />
+      ) : null}
       <div className="grid gap-6 lg:grid-cols-[0.34fr_0.66fr]">
         <Card className="h-fit">
           <CardHeader>
@@ -89,7 +112,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                   <div>
                     <p className="font-medium">Lesson content</p>
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      Phase đầu hiển thị URL/content source từ API contract.
+                      Nội dung bài học đang được render trực tiếp từ dữ liệu lesson.
                     </p>
                   </div>
                 </div>
