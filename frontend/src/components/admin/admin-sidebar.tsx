@@ -29,7 +29,9 @@ export function AdminSidebar() {
         {adminLinks.map((link) => {
           const Icon = link.icon;
           const isActive =
-            pathname === link.href || pathname.startsWith(`${link.href}/`);
+            link.href === "/admin"
+              ? pathname === link.href
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
           return (
             <Link
