@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   createTeacherExam,
   updateTeacherExam,
-} from "@/features/teacher/exams";
+} from "@/features/teacher/exams.client";
 import { teacherExamSchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";

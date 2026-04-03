@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { reviewTeacherResult } from "@/features/teacher/results";
+import { reviewTeacherResult } from "@/features/teacher/results.client";
 import { teacherResultReviewSchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";

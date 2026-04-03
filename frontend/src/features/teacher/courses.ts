@@ -1,5 +1,4 @@
 import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   CourseCreateInput,
   CourseDetail,
@@ -10,10 +9,16 @@ import type {
 } from "@/types/domain";
 import type { CourseFilters } from "@/types/forms";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getTeacherCourses(
   session: SessionUser,
   filters: CourseFilters = {},
 ) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   const normalizedFilters =
     session.role === "TEACHER"
       ? { ...filters, teacherId: session.id }
@@ -27,6 +32,7 @@ export async function getTeacherCourses(
 }
 
 export async function getTeacherCourse(courseId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<CourseDetail>(`/courses/${courseId}`, undefined, {
     auth: true,
   });
@@ -36,6 +42,7 @@ export async function getTeacherCourseEnrollments(
   courseId: string,
   filters: Record<string, string | number | boolean> = {},
 ) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<CourseEnrollmentItem[]>(
     `/courses/${courseId}/enrollments${buildQueryString(filters)}`,
     undefined,

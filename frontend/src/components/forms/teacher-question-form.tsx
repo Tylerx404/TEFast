@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   createTeacherQuestion,
   updateTeacherQuestion,
-} from "@/features/teacher/questions";
+} from "@/features/teacher/questions.client";
 import { teacherQuestionSchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";

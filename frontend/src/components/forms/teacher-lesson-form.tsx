@@ -10,7 +10,7 @@ import {
   createTeacherLesson,
   updateTeacherLesson,
   updateTeacherLessonOrder,
-} from "@/features/teacher/lessons";
+} from "@/features/teacher/lessons.client";
 import {
   teacherLessonOrderSchema,
   teacherLessonSchema,

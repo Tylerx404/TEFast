@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { updateEnrollmentProgress } from "@/features/enrollments/api";
+import { updateEnrollmentProgress } from "@/features/enrollments/client";
 
 type LessonProgressTrackerProps = {
   enrollmentId: string;

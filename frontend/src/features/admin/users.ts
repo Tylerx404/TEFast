@@ -1,5 +1,4 @@
 import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   AdminUserDetail,
   AdminUserListItem,
@@ -8,7 +7,13 @@ import type {
 } from "@/types/domain";
 import type { AdminUserFilters } from "@/types/forms";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getAdminUsers(filters: AdminUserFilters = {}) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<AdminUserListItem[]>(
     `/users${buildQueryString(filters)}`,
     undefined,
@@ -17,6 +22,7 @@ export async function getAdminUsers(filters: AdminUserFilters = {}) {
 }
 
 export async function getAdminUser(userId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<AdminUserDetail>(`/users/${userId}`, undefined, {
     auth: true,
   });
@@ -33,5 +39,6 @@ export async function updateAdminUserRole(
 }
 
 export async function getSystemHealth() {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<SystemHealth>(`/health`);
 }

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   createTeacherVocabulary,
   updateTeacherVocabulary,
-} from "@/features/teacher/vocabulary";
+} from "@/features/teacher/vocabulary.client";
 import { teacherVocabularySchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";

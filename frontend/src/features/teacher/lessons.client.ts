@@ -1,32 +1,9 @@
 import { proxyApiFetch } from "@/lib/api/client";
 import type {
-  CourseLesson,
   LessonCreateInput,
-  LessonDetail,
   LessonOrderUpdateInput,
   LessonUpdateInput,
 } from "@/types/domain";
-
-async function getSafeServerApiFetch() {
-  const { safeServerApiFetch } = await import("@/lib/api/server");
-  return safeServerApiFetch;
-}
-
-export async function getTeacherLessons(courseId: string) {
-  const safeServerApiFetch = await getSafeServerApiFetch();
-  return safeServerApiFetch<CourseLesson[]>(
-    `/courses/${courseId}/lessons`,
-    undefined,
-    { auth: true },
-  );
-}
-
-export async function getTeacherLesson(lessonId: string) {
-  const safeServerApiFetch = await getSafeServerApiFetch();
-  return safeServerApiFetch<LessonDetail>(`/lessons/${lessonId}`, undefined, {
-    auth: true,
-  });
-}
 
 export async function createTeacherLesson(
   courseId: string,
