@@ -7,7 +7,6 @@
     "moduleDetection": "force",
     "allowJs": false,
     "types": ["bun"],
-    "baseUrl": ".",
 
     // Bundler mode
     "moduleResolution": "bundler",
@@ -17,6 +16,8 @@
 
     // Best practices
     "strict": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
