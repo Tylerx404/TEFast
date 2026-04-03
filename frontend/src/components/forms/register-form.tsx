@@ -1,7 +1,6 @@
 "use client";
 
-import { startTransition, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -22,7 +21,6 @@ import { registerSchema } from "@/features/auth/schemas";
 import type { RegisterFormValues } from "@/types/forms";
 
 export function RegisterForm() {
-  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -45,10 +43,7 @@ export function RegisterForm() {
       });
 
       toast.success("Đăng ký thành công");
-      startTransition(() => {
-        router.push("/my-courses");
-        router.refresh();
-      });
+      window.location.assign("/my-courses");
     } catch (error) {
       mapApiErrorToForm(error, form.setError);
 

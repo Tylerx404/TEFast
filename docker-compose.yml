@@ -16,6 +16,7 @@ services:
       context: ./backend
     image: tefast-backend
     container_name: tefast-backend
+    command: sh -lc "bun run db:bootstrap && bun run start"
     ports:
       - "3001:3001"
     environment:
@@ -35,8 +36,8 @@ services:
     container_name: tefast-postgres
     environment:
       POSTGRES_DB: tefast
-      POSTGRES_USER: tyler
-      POSTGRES_PASSWORD: Vantai_290224
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     healthcheck:

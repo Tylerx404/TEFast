@@ -57,7 +57,7 @@ export default async function TeacherExamDetailPage({
           />
         </div>
       </div>
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Category</CardTitle>
@@ -77,6 +77,16 @@ export default async function TeacherExamDetailPage({
             <CardTitle>Questions</CardTitle>
           </CardHeader>
           <CardContent>{questions?.data?.length ?? 0}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={exam.data.isPublished ? "default" : "secondary"}>
+              {exam.data.isPublished ? "Published" : "Draft"}
+            </Badge>
+          </CardContent>
         </Card>
       </div>
       <Card>

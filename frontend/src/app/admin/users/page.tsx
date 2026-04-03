@@ -75,7 +75,7 @@ export default async function AdminUsersPage({
       ) : (
         <EmptyState
           title="Không có user phù hợp"
-          description="Thử thay đổi bộ lọc hoặc kiểm tra backend `GET /users`."
+          description="Thử thay đổi bộ lọc để tìm đúng nhóm người dùng bạn cần."
         />
       )}
     </div>

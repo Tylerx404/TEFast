@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   createTeacherQuestion,
   updateTeacherQuestion,
-} from "@/features/teacher/questions";
+} from "@/features/teacher/questions.client";
 import { teacherQuestionSchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";
@@ -188,7 +188,7 @@ export function TeacherQuestionForm({
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="Nhập đúng nội dung hoặc label đáp án theo backend contract"
+                  placeholder="Nhập nội dung đáp án đúng"
                 />
               </FormControl>
               <FormMessage />
@@ -208,6 +208,34 @@ export function TeacherQuestionForm({
             </FormItem>
           )}
         />
+        <div className="grid gap-5 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="audioUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Audio URL</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Image URL</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <Button type="submit" disabled={isPending}>
           {isPending ? "Đang lưu..." : mode === "create" ? "Tạo câu hỏi" : "Lưu thay đổi"}
         </Button>

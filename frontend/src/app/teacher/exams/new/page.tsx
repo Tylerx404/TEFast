@@ -29,6 +29,7 @@ export default async function TeacherNewExamPage() {
               examType: "PRACTICE",
               durationMinutes: 45,
               instructions: "",
+              isPublished: "false",
             }}
           />
         </CardContent>

@@ -79,6 +79,7 @@ export type TeacherExamFormValues = {
   examType: string;
   durationMinutes: number;
   instructions: string;
+  isPublished: "true" | "false";
 };
 
 export type TeacherQuestionFormValues = {
@@ -88,6 +89,8 @@ export type TeacherQuestionFormValues = {
   correctAnswer: string;
   explanation: string;
   orderIndex: number;
+  audioUrl: string;
+  imageUrl: string;
 };
 
 export type TeacherResultReviewFormValues = {
@@ -105,6 +108,7 @@ export type TeacherVocabularyFormValues = {
   level: string;
   audioUrl: string;
   imageUrl: string;
+  isPublished: "true" | "false";
 };
 
 export type AdminUserFilters = {

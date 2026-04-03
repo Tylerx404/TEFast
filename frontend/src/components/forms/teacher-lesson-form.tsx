@@ -10,7 +10,7 @@ import {
   createTeacherLesson,
   updateTeacherLesson,
   updateTeacherLessonOrder,
-} from "@/features/teacher/lessons";
+} from "@/features/teacher/lessons.client";
 import {
   teacherLessonOrderSchema,
   teacherLessonSchema,
@@ -125,7 +125,7 @@ export function TeacherLessonForm({
                     <SelectItem value="VIDEO">VIDEO</SelectItem>
                     <SelectItem value="TEXT">TEXT</SelectItem>
                     <SelectItem value="AUDIO">AUDIO</SelectItem>
-                    <SelectItem value="FILE">FILE</SelectItem>
+                    <SelectItem value="DOCUMENT">DOCUMENT</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

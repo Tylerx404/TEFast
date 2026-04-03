@@ -148,7 +148,7 @@ export function TeacherUploadPanel() {
             ))
           ) : (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Kết quả upload sẽ hiện tại đây để bạn copy URL sang form course, lesson,
+              URL file vừa upload sẽ hiện ở đây để bạn dùng lại trong course, lesson,
               question hoặc vocabulary.
             </p>
           )}

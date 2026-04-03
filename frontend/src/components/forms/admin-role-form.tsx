@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { updateAdminUserRole } from "@/features/admin/users";
+import { updateAdminUserRole } from "@/features/admin/users.client";
 import { adminRoleSchema } from "@/features/admin/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";

@@ -1,5 +1,4 @@
 import { proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   QuestionCreateInput,
   QuestionDetail,
@@ -7,7 +6,13 @@ import type {
   QuestionUpdateInput,
 } from "@/types/domain";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getTeacherQuestions(examId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<QuestionItem[]>(
     `/exams/${examId}/questions`,
     undefined,
@@ -16,6 +21,7 @@ export async function getTeacherQuestions(examId: string) {
 }
 
 export async function getTeacherQuestion(questionId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<QuestionDetail>(
     `/questions/${questionId}`,
     undefined,

@@ -22,9 +22,11 @@ router.get("/health", function (req, res, next) {
     service: process.env.APP_NAME || "tefast-backend",
     status: "ok",
     runtime: "bun",
-    postgres: process.env.DATABASE_URL ? "configured" : "missing",
-    redis: process.env.REDIS_URL ? "configured" : "missing",
-    time: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
+    dependencies: {
+      postgres: process.env.DATABASE_URL ? "configured" : "missing",
+      redis: process.env.REDIS_URL ? "configured" : "missing",
+    },
   });
 });
 

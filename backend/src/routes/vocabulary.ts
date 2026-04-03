@@ -27,6 +27,25 @@ async function findVocabularyById(req, vocabularyId) {
   return result.rows[0];
 }
 
+function isVocabularyVisibleToUser(vocabulary, currentUser) {
+  if (!vocabulary) {
+    return false;
+  }
+
+  if (vocabulary.is_published) {
+    return true;
+  }
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return (
+    currentUser.role.name === "ADMIN" ||
+    vocabulary.teacher_id === currentUser.id
+  );
+}
+
 async function ensureVocabularyOwnerOrAdmin(req, res, vocabularyId) {
   var vocabulary = await findVocabularyById(req, vocabularyId);
 
@@ -85,6 +104,7 @@ router.get("/topics", async function (req, res, next) {
 router.get("/", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var pageLimit = helper.readPagination(req.query);
     var page = pageLimit.page;
     var limit = pageLimit.limit;
@@ -119,6 +139,19 @@ router.get("/", async function (req, res, next) {
       idx++;
     }
 
+    if (req.query.teacherId) {
+      conditions.push("teacher_id = $" + idx++);
+      values.push(req.query.teacherId);
+    }
+
+    if (currentUser && currentUser.role.name === "ADMIN") {
+    } else if (currentUser && currentUser.role.name === "TEACHER") {
+      conditions.push("teacher_id = $" + idx++);
+      values.push(currentUser.id);
+    } else {
+      conditions.push("is_published = TRUE");
+    }
+
     whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
     countResult = await pool.query(
@@ -129,7 +162,7 @@ router.get("/", async function (req, res, next) {
 
     values.push(limit, offset);
     result = await pool.query(
-      `SELECT id, word, meaning, category, topic, level
+      `SELECT id, word, meaning, category, topic, level, is_published
        FROM vocabulary
        ${whereClause}
        ORDER BY created_at DESC
@@ -145,6 +178,7 @@ router.get("/", async function (req, res, next) {
         category: row.category,
         topic: row.topic,
         level: row.level,
+        isPublished: row.is_published,
       };
     });
 
@@ -231,9 +265,15 @@ router.post("/", checkLogin, checkRole("TEACHER", "ADMIN"), async function (req,
 
 router.get("/:id", async function (req, res, next) {
   try {
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var vocabulary = await findVocabularyById(req, req.params.id);
 
     if (!vocabulary) {
+      helper.sendError(res, 404, "Vocabulary item not found");
+      return;
+    }
+
+    if (!isVocabularyVisibleToUser(vocabulary, currentUser)) {
       helper.sendError(res, 404, "Vocabulary item not found");
       return;
     }
@@ -244,10 +284,12 @@ router.get("/:id", async function (req, res, next) {
       phonetic: vocabulary.phonetic,
       meaning: vocabulary.meaning,
       example: vocabulary.example,
+      category: vocabulary.category,
       topic: vocabulary.topic,
       level: vocabulary.level,
       audioUrl: vocabulary.audio_url,
       imageUrl: vocabulary.image_url,
+      isPublished: vocabulary.is_published,
     });
   } catch (error) {
     console.error("get vocabulary error:", error);

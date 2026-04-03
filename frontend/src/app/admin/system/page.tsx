@@ -12,7 +12,7 @@ export default async function AdminSystemPage() {
     return (
       <EmptyState
         title="Không lấy được system health"
-        description="Kiểm tra endpoint `/health` hoặc thử lại sau."
+        description="Hiện chưa đọc được trạng thái hệ thống. Hãy thử lại sau."
       />
     );
   }
@@ -22,7 +22,7 @@ export default async function AdminSystemPage() {
       <SectionHeading
         eyebrow="System"
         title="Tình trạng hệ thống"
-        description="Dữ liệu đang lấy trực tiếp từ `GET /health`."
+        description="Theo dõi nhanh trạng thái service và các dependency cốt lõi của hệ thống."
       />
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">

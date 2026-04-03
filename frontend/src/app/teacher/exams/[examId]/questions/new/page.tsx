@@ -33,6 +33,8 @@ export default async function TeacherNewQuestionPage({
               correctAnswer: "",
               explanation: "",
               orderIndex: 1,
+              audioUrl: "",
+              imageUrl: "",
             }}
           />
         </CardContent>

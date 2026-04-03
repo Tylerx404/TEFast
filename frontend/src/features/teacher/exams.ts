@@ -1,5 +1,4 @@
 import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   ExamCreateInput,
   ExamDetail,
@@ -8,10 +7,16 @@ import type {
   SessionUser,
 } from "@/types/domain";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getTeacherExams(
   session: SessionUser,
   filters: Record<string, string | number | boolean> = {},
 ) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   if (session.role === "ADMIN") {
     return safeServerApiFetch<ExamListItem[]>(
       `/exams${buildQueryString({ limit: 100, ...filters })}`,
@@ -48,12 +53,24 @@ export async function getTeacherExams(
 
   return {
     data: examGroups.flatMap((group) => group?.data ?? []),
-    meta: null,
+    meta: {
+      page: 1,
+      limit: examGroups.reduce(
+        (total, group) => total + (group?.meta?.limit ?? 0),
+        0,
+      ),
+      total: examGroups.reduce(
+        (total, group) => total + (group?.meta?.total ?? group?.data?.length ?? 0),
+        0,
+      ),
+      totalPages: 1,
+    },
     message: "Teacher exams fetched",
   };
 }
 
 export async function getTeacherExam(examId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<ExamDetail>(`/exams/${examId}`, undefined, {
     auth: true,
   });

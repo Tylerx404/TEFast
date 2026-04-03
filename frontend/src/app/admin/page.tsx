@@ -74,7 +74,7 @@ export default async function AdminDashboardPage() {
       ) : (
         <EmptyState
           title="Chưa lấy được health"
-          description="Kiểm tra endpoint `/health` để xem trạng thái hệ thống."
+          description="Hiện chưa đọc được trạng thái hệ thống. Hãy thử lại sau."
           actionHref="/admin/system"
           actionLabel="Mở system page"
         />

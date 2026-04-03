@@ -57,7 +57,9 @@ export function TeacherSidebar() {
         {teacherLinks.map((link) => {
           const Icon = link.icon;
           const isActive =
-            pathname === link.href || pathname.startsWith(`${link.href}/`);
+            link.href === "/teacher"
+              ? pathname === link.href
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
           return (
             <Link

@@ -48,6 +48,8 @@ router.patch("/profile", checkLogin, async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
     var body = req.body || {};
+    var normalizedTargetExam =
+      body.targetExam === "" ? null : body.targetExam;
 
     var fields: string[] = [];
     var values: any[] = [];
@@ -66,7 +68,10 @@ router.patch("/profile", checkLogin, async function (req, res, next) {
       values.push(body.avatarUrl);
     }
     if (body.targetExam !== undefined) {
-      if (body.targetExam !== null && !coursesModule.courseCategories.includes(body.targetExam)) {
+      if (
+        normalizedTargetExam !== null &&
+        !coursesModule.courseCategories.includes(normalizedTargetExam)
+      ) {
         helper.sendError(res, 422, "Validation failed", [
           {
             field: "targetExam",
@@ -77,7 +82,7 @@ router.patch("/profile", checkLogin, async function (req, res, next) {
       }
 
       fields.push("target_exam = $" + idx++);
-      values.push(body.targetExam);
+      values.push(normalizedTargetExam);
     }
 
     if (fields.length === 0) {

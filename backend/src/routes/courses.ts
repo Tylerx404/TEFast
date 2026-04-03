@@ -16,7 +16,7 @@ var checkRole = authHandler.checkRole;
 async function findCourseById(req, courseId) {
   var pool = req.app.locals.pg;
   var result = await pool.query(
-    "SELECT id, teacher_id FROM courses WHERE id = $1 LIMIT 1",
+    "SELECT id, teacher_id, is_published FROM courses WHERE id = $1 LIMIT 1",
     [courseId],
   );
 
@@ -25,6 +25,25 @@ async function findCourseById(req, courseId) {
   }
 
   return result.rows[0];
+}
+
+function isCourseVisibleToUser(course, currentUser) {
+  if (!course) {
+    return false;
+  }
+
+  if (course.is_published) {
+    return true;
+  }
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return (
+    currentUser.role.name === "ADMIN" ||
+    course.teacher_id === currentUser.id
+  );
 }
 
 async function ensureCourseOwnerOrAdmin(req, res, courseId) {
@@ -57,6 +76,10 @@ async function buildCourseLessonAccess(req, courseId) {
   }
 
   currentUser = await authHandler.tryLoadCurrentUser(req);
+
+  if (!isCourseVisibleToUser(course, currentUser)) {
+    return null;
+  }
 
   if (!currentUser) {
     return {
@@ -94,6 +117,7 @@ async function buildCourseLessonAccess(req, courseId) {
 router.get("/", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var pageLimit = helper.readPagination(req.query);
     var page = pageLimit.page;
     var limit = pageLimit.limit;
@@ -125,6 +149,13 @@ router.get("/", async function (req, res, next) {
     if (req.query.isPublished !== undefined) {
       conditions.push("c.is_published = $" + idx++);
       values.push(req.query.isPublished === "true");
+    }
+
+    if (!currentUser || currentUser.role.name === "STUDENT") {
+      conditions.push("c.is_published = TRUE");
+    } else if (currentUser.role.name === "TEACHER") {
+      conditions.push("(c.is_published = TRUE OR c.teacher_id = $" + idx++ + ")");
+      values.push(currentUser.id);
     }
 
     whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
@@ -286,7 +317,7 @@ router.get("/:courseId/lessons", async function (req, res, next) {
     }
 
     result = await pool.query(
-      `SELECT id, course_id, title, order_index, is_preview
+      `SELECT id, course_id, title, content_type, order_index, is_preview
        FROM lessons
        WHERE course_id = $1 ${condition}
        ORDER BY order_index ASC, created_at ASC`,
@@ -298,6 +329,7 @@ router.get("/:courseId/lessons", async function (req, res, next) {
         id: row.id,
         courseId: row.course_id,
         title: row.title,
+        contentType: row.content_type,
         orderIndex: row.order_index,
         isPreview: row.is_preview,
       };
@@ -461,6 +493,7 @@ router.get(
 router.get("/:id", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var result;
     var row;
 
@@ -482,6 +515,11 @@ router.get("/:id", async function (req, res, next) {
     }
 
     row = result.rows[0];
+
+    if (!isCourseVisibleToUser(row, currentUser)) {
+      helper.sendError(res, 404, "Course not found");
+      return;
+    }
 
     helper.sendSuccess(res, "Course fetched", {
       id: row.id,

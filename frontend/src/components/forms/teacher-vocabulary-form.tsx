@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   createTeacherVocabulary,
   updateTeacherVocabulary,
-} from "@/features/teacher/vocabulary";
+} from "@/features/teacher/vocabulary.client";
 import { teacherVocabularySchema } from "@/features/teacher/schemas";
 import { ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";
@@ -54,13 +54,18 @@ export function TeacherVocabularyForm({
   async function onSubmit(values: TeacherVocabularyFormValues) {
     setIsPending(true);
 
+    const payload = {
+      ...values,
+      isPublished: values.isPublished === "true",
+    };
+
     try {
       if (mode === "create") {
-        const response = await createTeacherVocabulary(values);
+        const response = await createTeacherVocabulary(payload);
         toast.success("Đã tạo từ vựng");
         router.push(`/teacher/vocabulary/${String(response.data.id)}/edit`);
       } else if (vocabularyId) {
-        await updateTeacherVocabulary(vocabularyId, values);
+        await updateTeacherVocabulary(vocabularyId, payload);
         toast.success("Đã cập nhật từ vựng");
         router.push(`/teacher/vocabulary`);
       }
@@ -195,6 +200,27 @@ export function TeacherVocabularyForm({
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="isPublished"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Publish</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="true">Published</SelectItem>
+                    <SelectItem value="false">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

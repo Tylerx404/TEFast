@@ -1,15 +1,20 @@
 import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   ExamResultDetail,
   ExamResultReviewInput,
   TeacherExamResultItem,
 } from "@/types/domain";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getTeacherExamResults(
   examId: string,
   filters: Record<string, string | number | boolean> = {},
 ) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<TeacherExamResultItem[]>(
     `/exams/${examId}/results${buildQueryString(filters)}`,
     undefined,
@@ -18,6 +23,7 @@ export async function getTeacherExamResults(
 }
 
 export async function getTeacherResult(resultId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<ExamResultDetail>(
     `/exam-results/${resultId}`,
     undefined,

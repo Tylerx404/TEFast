@@ -27,7 +27,7 @@ export default async function LandingPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[hsl(var(--muted-foreground))]">
             TEFast gom course, lesson, practice exam và kết quả vào một luồng học liền mạch.
-            Frontend này được dựng để bám sát API contract hiện tại của backend Bun + Express.
+            Mọi trải nghiệm học tập được kết nối trong một giao diện thống nhất và dễ theo dõi.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -84,10 +84,10 @@ export default async function LandingPage() {
               </TabsContent>
               <TabsContent value="api" className="space-y-4 text-sm leading-7 text-white/80">
                 <p>Frontend đọc public data bằng server component và gọi mutation qua proxy nội bộ để giữ JWT trong `httpOnly` cookie.</p>
-                <p>Cách này giảm lộ token và phù hợp với backend đang expose bearer auth.</p>
+                <p>Cách này giúp giữ phiên đăng nhập an toàn và ổn định hơn trong suốt quá trình sử dụng.</p>
               </TabsContent>
               <TabsContent value="ux" className="space-y-4 text-sm leading-7 text-white/80">
-                <p>Loading, empty, error state được chuẩn hóa để backend chưa xong vẫn có trải nghiệm rõ ràng.</p>
+                <p>Loading, empty và error state được chuẩn hóa để mọi luồng học tập luôn rõ ràng và dễ hiểu.</p>
                 <p>Tông màu ấm hiện tại được giữ nguyên và map vào token của `shadcn/ui`.</p>
               </TabsContent>
             </Tabs>
@@ -99,7 +99,7 @@ export default async function LandingPage() {
         <SectionHeading
           eyebrow="Featured Courses"
           title="Khóa học nổi bật đang chờ bạn bắt đầu"
-          description="Danh sách này đang lấy theo API contract `GET /courses`. Khi backend chưa expose đầy đủ, frontend sẽ hiển thị trạng thái thay thế thay vì vỡ trang."
+          description="Khám phá những khóa học nổi bật để bắt đầu lộ trình TOEIC hoặc IELTS phù hợp với bạn."
         />
         {featuredCourses?.data?.length ? (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -110,7 +110,7 @@ export default async function LandingPage() {
         ) : (
           <EmptyState
             title="Chưa có khóa học public"
-            description="Khi backend hoàn thiện `GET /courses`, phần này sẽ tự hiển thị danh sách khóa học nổi bật."
+            description="Hiện chưa có khóa học nổi bật nào được mở công khai."
             actionHref="/courses"
             actionLabel="Đi tới catalog"
           />

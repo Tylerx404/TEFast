@@ -182,6 +182,11 @@ router.post("/", checkLogin, async function (req, res, next) {
     var wrongCount;
     var score;
     var insertResult;
+    var submittedAt = new Date();
+    var durationSpentSeconds = 0;
+    var sessionStartedAt;
+    var sessionExpiresAt;
+    var clientDurationSpentSeconds = Number(body.durationSpentSeconds);
 
     if (
       !body.examSessionId ||
@@ -199,7 +204,7 @@ router.post("/", checkLogin, async function (req, res, next) {
     }
 
     sessionResult = await pool.query(
-      `SELECT id, exam_id, user_id, expires_at, submitted_at
+      `SELECT id, exam_id, user_id, started_at, expires_at, submitted_at
        FROM exam_sessions
        WHERE id = $1
        LIMIT 1`,
@@ -228,9 +233,24 @@ router.post("/", checkLogin, async function (req, res, next) {
       return;
     }
 
-    if (new Date(session.expires_at).getTime() <= Date.now()) {
-      helper.sendError(res, 409, "Exam session has expired");
-      return;
+    sessionStartedAt = new Date(session.started_at);
+    sessionExpiresAt = new Date(session.expires_at);
+
+    if (!Number.isNaN(sessionStartedAt.getTime())) {
+      durationSpentSeconds = Math.max(
+        0,
+        Math.floor(
+          (
+            Math.min(submittedAt.getTime(), sessionExpiresAt.getTime()) -
+            sessionStartedAt.getTime()
+          ) / 1000,
+        ),
+      );
+    } else if (
+      Number.isFinite(clientDurationSpentSeconds) &&
+      clientDurationSpentSeconds >= 0
+    ) {
+      durationSpentSeconds = Math.floor(clientDurationSpentSeconds);
     }
 
     questionsResult = await pool.query(
@@ -283,7 +303,7 @@ router.post("/", checkLogin, async function (req, res, next) {
         score,
         correctCount,
         wrongCount,
-        body.durationSpentSeconds,
+        durationSpentSeconds,
       ],
     );
 
@@ -382,6 +402,7 @@ router.get("/:id", checkLogin, async function (req, res, next) {
       wrongCount: examResult.wrong_count,
       durationSpentSeconds: examResult.duration_spent_seconds,
       feedback: examResult.feedback,
+      reviewedAt: examResult.reviewed_at,
       submittedAt: examResult.submitted_at,
     });
   } catch (error) {

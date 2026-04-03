@@ -62,6 +62,7 @@ export default async function TeacherEditExamPage({
               examType: exam.data.examType,
               durationMinutes: exam.data.durationMinutes,
               instructions: exam.data.instructions ?? "",
+              isPublished: exam.data.isPublished ? "true" : "false",
             }}
           />
         </CardContent>

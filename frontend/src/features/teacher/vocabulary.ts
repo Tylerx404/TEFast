@@ -1,5 +1,4 @@
 import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
-import { safeServerApiFetch } from "@/lib/api/server";
 import type {
   VocabularyCreateInput,
   VocabularyItem,
@@ -7,7 +6,13 @@ import type {
 } from "@/types/domain";
 import type { VocabularyFilters } from "@/types/forms";
 
+async function getSafeServerApiFetch() {
+  const { safeServerApiFetch } = await import("@/lib/api/server");
+  return safeServerApiFetch;
+}
+
 export async function getTeacherVocabulary(filters: VocabularyFilters = {}) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<VocabularyItem[]>(
     `/vocabulary${buildQueryString(filters)}`,
     undefined,
@@ -16,6 +21,7 @@ export async function getTeacherVocabulary(filters: VocabularyFilters = {}) {
 }
 
 export async function getTeacherVocabularyDetail(vocabularyId: string) {
+  const safeServerApiFetch = await getSafeServerApiFetch();
   return safeServerApiFetch<VocabularyItem>(`/vocabulary/${vocabularyId}`, undefined, {
     auth: true,
   });
