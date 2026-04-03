@@ -1,0 +1,83 @@
+import { buildQueryString, proxyApiFetch } from "@/lib/api/client";
+import { safeServerApiFetch } from "@/lib/api/server";
+import type {
+  ExamCreateInput,
+  ExamDetail,
+  ExamListItem,
+  ExamUpdateInput,
+  SessionUser,
+} from "@/types/domain";
+
+export async function getTeacherExams(
+  session: SessionUser,
+  filters: Record<string, string | number | boolean> = {},
+) {
+  if (session.role === "ADMIN") {
+    return safeServerApiFetch<ExamListItem[]>(
+      `/exams${buildQueryString({ limit: 100, ...filters })}`,
+      undefined,
+      { auth: true },
+    );
+  }
+
+  const coursesResponse = await safeServerApiFetch<{ id: string }[]>(
+    `/courses${buildQueryString({ teacherId: session.id, limit: 100 })}`,
+    undefined,
+    { auth: true },
+  );
+
+  const courseIds = coursesResponse?.data?.map((course) => course.id) ?? [];
+
+  if (!courseIds.length) {
+    return {
+      data: [],
+      meta: null,
+      message: "No teacher exams found",
+    };
+  }
+
+  const examGroups = await Promise.all(
+    courseIds.map((courseId) =>
+      safeServerApiFetch<ExamListItem[]>(
+        `/exams${buildQueryString({ courseId, limit: 100, ...filters })}`,
+        undefined,
+        { auth: true },
+      ),
+    ),
+  );
+
+  return {
+    data: examGroups.flatMap((group) => group?.data ?? []),
+    meta: null,
+    message: "Teacher exams fetched",
+  };
+}
+
+export async function getTeacherExam(examId: string) {
+  return safeServerApiFetch<ExamDetail>(`/exams/${examId}`, undefined, {
+    auth: true,
+  });
+}
+
+export async function createTeacherExam(payload: ExamCreateInput) {
+  return proxyApiFetch<{ id: string }>(`/api/proxy/exams`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTeacherExam(
+  examId: string,
+  payload: ExamUpdateInput,
+) {
+  return proxyApiFetch(`/api/proxy/exams/${examId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTeacherExam(examId: string) {
+  return proxyApiFetch(`/api/proxy/exams/${examId}`, {
+    method: "DELETE",
+  });
+}
