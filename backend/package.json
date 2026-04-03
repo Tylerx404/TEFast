@@ -3,12 +3,26 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch src/server.ts",
-    "start": "bun src/server.ts",
-    "build": "bun build ./src/server.ts --target bun --outdir dist",
+    "dev": "bun --watch src/app.ts",
+    "start": "bun src/app.ts",
+    "build": "bun build ./src/app.ts --target bun --outdir dist",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "ejs": "~2.6.1",
+    "express": "~4.16.1",
+    "express-validator": "^7.3.1",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.2",
+    "pg": "^8.16.3"
+  },
   "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/pg": "^8.15.5",
     "@types/bun": "latest",
     "typescript": "^6"
   }

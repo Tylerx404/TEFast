@@ -14,10 +14,13 @@ Monorepo scaffold with:
 ```text
 .
 ├── backend
-│   └── src
-│       ├── config
-│       ├── modules
-│       └── shared
+│   ├── public
+│   ├── src
+│   │   ├── app.ts
+│   │   ├── routes
+│   │   ├── schemas
+│   │   └── utils
+│   └── views
 ├── frontend
 └── docker-compose.yml
 ```

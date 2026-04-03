@@ -1,48 +1,65 @@
-import { env } from "./config/env";
-import { getHealthResponse } from "./modules/health/health.controller";
-import { json } from "./shared/http/json";
+var createError = require("http-errors");
+var express = require("express");
+var path = require("path");
+var cookieParser = require("cookie-parser");
+var Pool = require("pg").Pool;
+var helper = require("./utils/helper");
 
-type RouteHandler = () => Response;
+var app = express();
+var PORT = Number(process.env.PORT) || 3001;
+var HOST = process.env.HOST || "127.0.0.1";
+var DATABASE_URL =
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/tefast";
 
-const routes = new Map<string, RouteHandler>([
-  [
-    "GET /",
-    () =>
-      json({
-        service: env.appName,
-        message: "TEFast backend is running",
-      }),
-  ],
-  ["GET /health", getHealthResponse],
-]);
+app.disable("x-powered-by");
+app.set("views", path.join(__dirname, "../views"));
+app.set("view engine", "ejs");
 
-export function app(request: Request): Response {
-  const url = new URL(request.url);
-  const routeKey = `${request.method.toUpperCase()} ${url.pathname}`;
-  const routeHandler = routes.get(routeKey);
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "../public")));
 
-  if (!routeHandler) {
-    return json(
-      {
-        message: `Route not found: ${routeKey}`,
-      },
-      { status: 404 },
-    );
-  }
+var pool = new Pool({
+  connectionString: DATABASE_URL,
+});
 
-  try {
-    return routeHandler();
-  } catch (error) {
-    console.error("Unhandled request error", {
-      route: routeKey,
-      error,
+app.locals.pg = pool;
+
+app.use("/", require("./routes/index"));
+app.use("/auth", require("./routes/auth"));
+app.use("/users", require("./routes/users"));
+app.use("/courses", require("./routes/courses"));
+app.use("/lessons", require("./routes/lessons"));
+app.use("/exams", require("./routes/exams"));
+app.use("/questions", require("./routes/questions"));
+app.use("/exam-results", require("./routes/examResults"));
+app.use("/comments", require("./routes/comments"));
+app.use("/enrollments", require("./routes/enrollments"));
+app.use("/upload", require("./routes/upload"));
+app.use("/vocabulary", require("./routes/vocabulary"));
+
+app.use(function (req, res, next) {
+  next(createError(404));
+});
+
+app.use(function (err, req, res, next) {
+  helper.sendError(res, err.status || 500, err.message || "Internal server error");
+});
+
+if (require.main === module) {
+  pool
+    .query("SELECT 1")
+    .then(function () {
+      console.log("da connect postgres");
+      app.listen(PORT, HOST, function () {
+        console.log("Server running at http://" + HOST + ":" + PORT);
+      });
+    })
+    .catch(function (error) {
+      console.error("database setup error:", error);
+      process.exit(1);
     });
-
-    return json(
-      {
-        message: "Internal server error",
-      },
-      { status: 500 },
-    );
-  }
 }
+
+module.exports = app;
