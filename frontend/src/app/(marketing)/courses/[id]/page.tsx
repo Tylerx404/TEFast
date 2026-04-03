@@ -60,7 +60,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
           </div>
           <SectionHeading
             title={course.data.title}
-            description={course.data.description || "Khóa học đang được xây dựng và sẽ cập nhật thêm chi tiết khi backend hoàn thiện."}
+            description={course.data.description || "Khóa học này đang được cập nhật thêm nội dung và thông tin chi tiết."}
           />
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="bg-[hsl(var(--background))] shadow-none">
@@ -164,7 +164,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
             ) : (
               <EmptyState
                 title="Chưa có lesson"
-                description="Danh sách bài học sẽ hiện tại đây khi endpoint `/courses/:id/lessons` sẵn sàng."
+                description="Khóa học này hiện chưa có bài học nào để bắt đầu."
               />
             )}
           </CardContent>
@@ -200,7 +200,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
             ) : (
               <EmptyState
                 title="Chưa có đề thi"
-                description="Khu vực này sẽ render khi `GET /exams?courseId=...` có dữ liệu."
+                description="Hiện chưa có bài thi luyện tập nào cho khóa học này."
               />
             )}
           </CardContent>

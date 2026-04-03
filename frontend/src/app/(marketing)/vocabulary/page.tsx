@@ -23,7 +23,7 @@ export default async function VocabularyPage({ searchParams }: VocabularyPagePro
       <SectionHeading
         eyebrow="Vocabulary"
         title="Kho từ vựng theo topic và cấp độ"
-        description="Danh mục này đang bám theo API contract `GET /vocabulary` và sẵn sàng hiển thị khi backend phần từ vựng usable."
+        description="Tra cứu từ vựng theo chủ đề và cấp độ để hỗ trợ quá trình học TOEIC và IELTS."
       />
       {vocabulary?.data?.length ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -48,7 +48,7 @@ export default async function VocabularyPage({ searchParams }: VocabularyPagePro
       ) : (
         <EmptyState
           title="Vocabulary chưa có dữ liệu"
-          description="Khi backend hoàn thiện module vocabulary, danh sách từ sẽ hiển thị ở đây."
+          description="Hiện chưa có mục từ nào phù hợp để hiển thị."
         />
       )}
     </PageShell>

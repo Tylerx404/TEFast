@@ -51,7 +51,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       <PageShell>
         <EmptyState
           title="Không lấy được dữ liệu lesson"
-          description="Kiểm tra lại quyền truy cập hoặc endpoint `GET /lessons/:id`."
+          description="Bạn có thể chưa có quyền truy cập hoặc bài học này hiện không khả dụng."
           actionHref={`/courses/${courseId}`}
           actionLabel="Quay lại khóa học"
         />

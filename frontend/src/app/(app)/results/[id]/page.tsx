@@ -23,7 +23,7 @@ export default async function ResultDetailPage({ params }: ResultDetailPageProps
       <PageShell>
         <EmptyState
           title="Không tải được kết quả"
-          description="Kiểm tra endpoint `GET /exam-results/:id` hoặc thử lại sau."
+          description="Kết quả này hiện không khả dụng hoặc bạn không có quyền xem."
           actionHref="/results"
           actionLabel="Quay lại danh sách kết quả"
         />

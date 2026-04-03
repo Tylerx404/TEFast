@@ -49,7 +49,7 @@ export default async function ExamTakePage({
       <PageShell>
         <SectionHeading
           title="Bài thi chưa sẵn sàng"
-          description="Question bank chưa có dữ liệu hoặc endpoint chưa hoàn thiện."
+          description="Bài thi này hiện chưa có đủ dữ liệu để bắt đầu làm bài."
         />
         <Button asChild className="w-fit">
           <Link href={`/exams/${examId}`}>Quay lại chi tiết đề</Link>

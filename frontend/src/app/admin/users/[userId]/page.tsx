@@ -22,7 +22,7 @@ export default async function AdminUserDetailPage({
     return (
       <EmptyState
         title="Không tải được user"
-        description="Kiểm tra lại endpoint `GET /users/:id` hoặc quay về danh sách users."
+        description="Người dùng này hiện không khả dụng hoặc đã bị gỡ khỏi hệ thống."
         actionHref="/admin/users"
         actionLabel="Quay lại users"
       />

@@ -179,7 +179,7 @@ export function ExamTakeShell({
               <DialogTitle>Xác nhận nộp bài</DialogTitle>
               <DialogDescription>
                 Bạn đã trả lời {answeredCount}/{questions.length} câu. Sau khi nộp sẽ
-                không thể thay đổi đáp án trong phase hiện tại.
+                không thể thay đổi đáp án của bài làm này.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

@@ -22,7 +22,7 @@ export default async function VocabularyDetailPage({
       <PageShell>
         <EmptyState
           title="Không tải được mục từ"
-          description="Kiểm tra endpoint `GET /vocabulary/:id` hoặc quay lại danh sách từ vựng."
+          description="Mục từ này hiện không khả dụng hoặc đã bị gỡ khỏi danh sách."
           actionHref="/vocabulary"
           actionLabel="Quay lại vocabulary"
         />

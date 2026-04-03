@@ -188,7 +188,7 @@ export function TeacherQuestionForm({
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="Nhập đúng nội dung hoặc label đáp án theo backend contract"
+                  placeholder="Nhập nội dung đáp án đúng"
                 />
               </FormControl>
               <FormMessage />

@@ -36,7 +36,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
       ) : (
         <EmptyState
           title="Không tìm thấy khóa học phù hợp"
-          description="Hãy thay đổi từ khóa hoặc category để thử lại. Nếu backend chưa sẵn sàng, đây cũng là trạng thái fallback an toàn."
+          description="Hãy thử thay đổi từ khóa hoặc danh mục để tìm khóa học phù hợp hơn."
         />
       )}
     </PageShell>

@@ -60,7 +60,7 @@ export default async function TeacherCourseStudentsPage({
       ) : (
         <EmptyState
           title="Chưa có học viên"
-          description="Danh sách học viên sẽ hiện ở đây khi course có enrollment."
+          description="Khóa học này hiện chưa có học viên đăng ký."
         />
       )}
     </div>

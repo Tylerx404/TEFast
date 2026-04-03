@@ -31,7 +31,7 @@ export default async function TeacherCourseDetailPage({
     return (
       <EmptyState
         title="Không tải được course"
-        description="Kiểm tra lại endpoint course detail hoặc quay về danh sách courses."
+        description="Khóa học này hiện không khả dụng hoặc bạn không có quyền quản lý."
         actionHref="/teacher/courses"
         actionLabel="Quay lại courses"
       />

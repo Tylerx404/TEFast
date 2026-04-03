@@ -23,7 +23,7 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
       <PageShell>
         <EmptyState
           title="Chưa lấy được đề thi"
-          description="Kiểm tra endpoint `GET /exams/:id` hoặc thử lại sau."
+          description="Đề thi này hiện không khả dụng hoặc đã bị gỡ khỏi hệ thống."
         />
       </PageShell>
     );
