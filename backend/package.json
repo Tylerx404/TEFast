@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun --watch src/app.ts",
     "start": "bun src/app.ts",
+    "db:bootstrap": "bun src/scripts/bootstrap-db.ts",
     "build": "bun build ./src/app.ts --target bun --outdir dist",
     "typecheck": "tsc --noEmit"
   },
