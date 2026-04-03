@@ -54,6 +54,7 @@ export default async function TeacherEditVocabularyPage({
               level: vocabulary.data.level ?? "",
               audioUrl: vocabulary.data.audioUrl ?? "",
               imageUrl: vocabulary.data.imageUrl ?? "",
+              isPublished: vocabulary.data.isPublished ? "true" : "false",
             }}
           />
         </CardContent>

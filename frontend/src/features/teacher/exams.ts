@@ -48,7 +48,18 @@ export async function getTeacherExams(
 
   return {
     data: examGroups.flatMap((group) => group?.data ?? []),
-    meta: null,
+    meta: {
+      page: 1,
+      limit: examGroups.reduce(
+        (total, group) => total + (group?.meta?.limit ?? 0),
+        0,
+      ),
+      total: examGroups.reduce(
+        (total, group) => total + (group?.meta?.total ?? group?.data?.length ?? 0),
+        0,
+      ),
+      totalPages: 1,
+    },
     message: "Teacher exams fetched",
   };
 }

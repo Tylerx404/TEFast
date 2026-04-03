@@ -162,7 +162,7 @@ router.get("/", async function (req, res, next) {
 
     values.push(limit, offset);
     result = await pool.query(
-      `SELECT id, word, meaning, category, topic, level
+      `SELECT id, word, meaning, category, topic, level, is_published
        FROM vocabulary
        ${whereClause}
        ORDER BY created_at DESC
@@ -178,6 +178,7 @@ router.get("/", async function (req, res, next) {
         category: row.category,
         topic: row.topic,
         level: row.level,
+        isPublished: row.is_published,
       };
     });
 
@@ -288,6 +289,7 @@ router.get("/:id", async function (req, res, next) {
       level: vocabulary.level,
       audioUrl: vocabulary.audio_url,
       imageUrl: vocabulary.image_url,
+      isPublished: vocabulary.is_published,
     });
   } catch (error) {
     console.error("get vocabulary error:", error);

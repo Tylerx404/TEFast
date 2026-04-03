@@ -56,18 +56,24 @@ export function TeacherExamForm({
   async function onSubmit(values: TeacherExamFormValues) {
     setIsPending(true);
 
+    const payload = {
+      ...values,
+      isPublished: values.isPublished === "true",
+    };
+
     try {
       if (mode === "create") {
-        const response = await createTeacherExam(values);
+        const response = await createTeacherExam(payload);
         toast.success("Đã tạo đề thi");
         router.push(`/teacher/exams/${String(response.data.id)}`);
       } else if (examId) {
         await updateTeacherExam(examId, {
-          title: values.title,
-          category: values.category,
-          examType: values.examType,
-          durationMinutes: values.durationMinutes,
-          instructions: values.instructions,
+          title: payload.title,
+          category: payload.category,
+          examType: payload.examType,
+          durationMinutes: payload.durationMinutes,
+          instructions: payload.instructions,
+          isPublished: payload.isPublished,
         });
         toast.success("Đã cập nhật đề thi");
         router.push(`/teacher/exams/${examId}`);
@@ -191,6 +197,27 @@ export function TeacherExamForm({
               <FormControl>
                 <Textarea {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="isPublished"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Publish</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="true">Published</SelectItem>
+                  <SelectItem value="false">Draft</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

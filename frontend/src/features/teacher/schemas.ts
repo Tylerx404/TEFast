@@ -31,6 +31,7 @@ export const teacherExamSchema = z.object({
   examType: z.string().min(2, "Loại đề là bắt buộc"),
   durationMinutes: z.number().min(1, "Thời lượng phải lớn hơn 0"),
   instructions: z.string().min(10, "Hướng dẫn cần ít nhất 10 ký tự"),
+  isPublished: z.enum(["true", "false"]),
 });
 
 export const teacherQuestionSchema = z.object({
@@ -46,6 +47,8 @@ export const teacherQuestionSchema = z.object({
   correctAnswer: z.string().min(1, "Đáp án đúng là bắt buộc"),
   explanation: z.string().min(2, "Giải thích là bắt buộc"),
   orderIndex: z.number().min(1, "Thứ tự phải lớn hơn 0"),
+  audioUrl: z.string(),
+  imageUrl: z.string(),
 });
 
 export const teacherResultReviewSchema = z.object({
@@ -63,4 +66,5 @@ export const teacherVocabularySchema = z.object({
   level: z.string(),
   audioUrl: z.string(),
   imageUrl: z.string(),
+  isPublished: z.enum(["true", "false"]),
 });

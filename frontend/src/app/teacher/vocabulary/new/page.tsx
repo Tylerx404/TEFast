@@ -26,6 +26,7 @@ export default async function TeacherNewVocabularyPage() {
               level: "BEGINNER",
               audioUrl: "",
               imageUrl: "",
+              isPublished: "false",
             }}
           />
         </CardContent>

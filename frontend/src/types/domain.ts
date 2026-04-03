@@ -73,6 +73,7 @@ export type CourseLesson = {
   id: string;
   courseId: string;
   title: string;
+  contentType?: string;
   orderIndex: number;
   isPreview: boolean;
 };
@@ -147,11 +148,13 @@ export type LessonOrderUpdateInput = {
 
 export type ExamListItem = {
   id: string;
+  courseId?: string | null;
   title: string;
   category: ExamCategory;
   examType: string;
   durationMinutes: number;
   totalQuestions: number;
+  isPublished?: boolean;
 };
 
 export type ExamDetail = ExamListItem & {
@@ -166,6 +169,7 @@ export type ExamCreateInput = {
   examType: string;
   durationMinutes: number;
   instructions: string;
+  isPublished?: boolean;
 };
 
 export type ExamUpdateInput = Partial<Omit<ExamCreateInput, "courseId">>;
@@ -200,6 +204,8 @@ export type QuestionCreateInput = {
   correctAnswer: string;
   explanation: string;
   orderIndex: number;
+  audioUrl?: string;
+  imageUrl?: string;
 };
 
 export type QuestionUpdateInput = Partial<QuestionCreateInput>;
@@ -266,6 +272,7 @@ export type VocabularyItem = {
   example?: string | null;
   audioUrl?: string | null;
   imageUrl?: string | null;
+  isPublished?: boolean;
 };
 
 export type VocabularyCreateInput = {
@@ -278,6 +285,7 @@ export type VocabularyCreateInput = {
   level: string;
   audioUrl: string;
   imageUrl: string;
+  isPublished?: boolean;
 };
 
 export type VocabularyUpdateInput = Partial<VocabularyCreateInput>;

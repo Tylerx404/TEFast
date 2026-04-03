@@ -317,7 +317,7 @@ router.get("/:courseId/lessons", async function (req, res, next) {
     }
 
     result = await pool.query(
-      `SELECT id, course_id, title, order_index, is_preview
+      `SELECT id, course_id, title, content_type, order_index, is_preview
        FROM lessons
        WHERE course_id = $1 ${condition}
        ORDER BY order_index ASC, created_at ASC`,
@@ -329,6 +329,7 @@ router.get("/:courseId/lessons", async function (req, res, next) {
         id: row.id,
         courseId: row.course_id,
         title: row.title,
+        contentType: row.content_type,
         orderIndex: row.order_index,
         isPreview: row.is_preview,
       };

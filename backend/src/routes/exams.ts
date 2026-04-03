@@ -190,11 +190,13 @@ router.get("/", async function (req, res, next) {
     exams = result.rows.map(function (row) {
       return {
         id: row.id,
+        courseId: row.course_id,
         title: row.title,
         category: row.category,
         examType: row.exam_type,
         durationMinutes: row.duration_minutes,
         totalQuestions: parseInt(row.total_questions, 10),
+        isPublished: row.is_published,
       };
     });
 
@@ -577,6 +579,7 @@ router.get("/:id", async function (req, res, next) {
       durationMinutes: row.duration_minutes,
       totalQuestions: parseInt(row.total_questions, 10),
       instructions: row.instructions,
+      isPublished: row.is_published,
     });
   } catch (error) {
     console.error("get exam error:", error);

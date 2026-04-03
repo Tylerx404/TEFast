@@ -61,6 +61,8 @@ export default async function TeacherEditQuestionPage({
               correctAnswer: question.data.correctAnswer ?? "",
               explanation: question.data.explanation ?? "",
               orderIndex: question.data.orderIndex,
+              audioUrl: question.data.audioUrl ?? "",
+              imageUrl: question.data.imageUrl ?? "",
             }}
           />
         </CardContent>

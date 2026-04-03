@@ -52,6 +52,7 @@ export default async function TeacherVocabularyPage({
                 <TableHead>Word</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Topic</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -63,6 +64,11 @@ export default async function TeacherVocabularyPage({
                     {item.category ? <Badge>{item.category}</Badge> : "-"}
                   </TableCell>
                   <TableCell>{item.topic || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.isPublished ? "default" : "secondary"}>
+                      {item.isPublished ? "Published" : "Draft"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" asChild>

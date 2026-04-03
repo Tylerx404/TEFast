@@ -40,6 +40,7 @@ export default async function TeacherExamsPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -52,6 +53,11 @@ export default async function TeacherExamsPage() {
                   </TableCell>
                   <TableCell>{exam.examType}</TableCell>
                   <TableCell>{exam.durationMinutes} phút</TableCell>
+                  <TableCell>
+                    <Badge variant={exam.isPublished ? "default" : "secondary"}>
+                      {exam.isPublished ? "Published" : "Draft"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" asChild>
                       <Link href={`/teacher/exams/${exam.id}`}>Quản lý</Link>

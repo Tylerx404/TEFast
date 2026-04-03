@@ -65,7 +65,7 @@ export default async function TeacherCourseLessonsPage({
               {lessons.data.map((lesson) => (
                 <TableRow key={lesson.id}>
                   <TableCell className="font-medium">{lesson.title}</TableCell>
-                  <TableCell>-</TableCell>
+                  <TableCell>{lesson.contentType ?? "-"}</TableCell>
                   <TableCell>
                     <Badge variant={lesson.isPreview ? "default" : "secondary"}>
                       {lesson.isPreview ? "Preview" : "Locked"}

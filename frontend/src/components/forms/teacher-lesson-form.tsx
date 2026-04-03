@@ -125,7 +125,7 @@ export function TeacherLessonForm({
                     <SelectItem value="VIDEO">VIDEO</SelectItem>
                     <SelectItem value="TEXT">TEXT</SelectItem>
                     <SelectItem value="AUDIO">AUDIO</SelectItem>
-                    <SelectItem value="FILE">FILE</SelectItem>
+                    <SelectItem value="DOCUMENT">DOCUMENT</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

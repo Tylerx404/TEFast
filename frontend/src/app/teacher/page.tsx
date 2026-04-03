@@ -13,9 +13,9 @@ import { requireTeacherSession } from "@/lib/auth/session";
 export default async function TeacherDashboardPage() {
   const session = await requireTeacherSession("/teacher");
   const [courses, exams, vocabulary] = await Promise.all([
-    getTeacherCourses(session, { limit: "10" }),
+    getTeacherCourses(session, { limit: "5" }),
     getTeacherExams(session, { limit: 20 }),
-    getTeacherVocabulary({ limit: "10" }),
+    getTeacherVocabulary({ limit: "1" }),
   ]);
 
   return (
@@ -32,7 +32,7 @@ export default async function TeacherDashboardPage() {
             <CardTitle>Courses</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{courses?.data?.length ?? 0}</p>
+            <p className="text-3xl font-semibold">{courses?.meta?.total ?? courses?.data?.length ?? 0}</p>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
               Khóa học bạn đang quản lý.
             </p>
@@ -43,7 +43,7 @@ export default async function TeacherDashboardPage() {
             <CardTitle>Exams</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{exams?.data?.length ?? 0}</p>
+            <p className="text-3xl font-semibold">{exams?.meta?.total ?? exams?.data?.length ?? 0}</p>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
               Đề thi hiện có trong teacher area.
             </p>
@@ -54,7 +54,7 @@ export default async function TeacherDashboardPage() {
             <CardTitle>Vocabulary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{vocabulary?.data?.length ?? 0}</p>
+            <p className="text-3xl font-semibold">{vocabulary?.meta?.total ?? vocabulary?.data?.length ?? 0}</p>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
               Mục từ có thể chỉnh sửa.
             </p>
