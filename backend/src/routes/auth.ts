@@ -33,6 +33,8 @@ router.post(
     try {
       var pool = req.app.locals.pg;
       var body = req.body || {};
+      var normalizedTargetExam =
+        body.targetExam === "" ? null : body.targetExam;
 
       var existEmail = await pool.query(
         "SELECT id FROM users WHERE email = $1 LIMIT 1",
@@ -61,9 +63,9 @@ router.post(
       }
 
       if (
-        body.targetExam !== undefined &&
-        body.targetExam !== null &&
-        !courseCategories.includes(body.targetExam)
+        normalizedTargetExam !== undefined &&
+        normalizedTargetExam !== null &&
+        !courseCategories.includes(normalizedTargetExam)
       ) {
         helper.sendError(res, 422, "Validation failed", [
           {
@@ -98,7 +100,7 @@ router.post(
           body.avatarUrl || "https://i.sstatic.net/l60Hf.png",
           body.phone || null,
           studentRole.rows[0].id,
-          courseCategories.includes(body.targetExam) ? body.targetExam : null,
+          courseCategories.includes(normalizedTargetExam) ? normalizedTargetExam : null,
         ],
       );
 

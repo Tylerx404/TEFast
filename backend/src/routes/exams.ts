@@ -15,7 +15,7 @@ var checkRole = authHandler.checkRole;
 async function findExamById(req, examId) {
   var pool = req.app.locals.pg;
   var result = await pool.query(
-    `SELECT id, course_id, teacher_id, duration_minutes
+    `SELECT id, course_id, teacher_id, duration_minutes, is_published
      FROM exams
      WHERE id = $1
      LIMIT 1`,
@@ -27,6 +27,25 @@ async function findExamById(req, examId) {
   }
 
   return result.rows[0];
+}
+
+function isExamVisibleToUser(exam, currentUser) {
+  if (!exam) {
+    return false;
+  }
+
+  if (exam.is_published) {
+    return true;
+  }
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return (
+    currentUser.role.name === "ADMIN" ||
+    exam.teacher_id === currentUser.id
+  );
 }
 
 async function findCourseById(req, courseId) {
@@ -108,6 +127,7 @@ async function canAccessExamQuestions(req, exam) {
 router.get("/", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var pageLimit = helper.readPagination(req.query);
     var page = pageLimit.page;
     var limit = pageLimit.limit;
@@ -139,6 +159,13 @@ router.get("/", async function (req, res, next) {
     if (req.query.keyword) {
       conditions.push("e.title ILIKE $" + idx++);
       values.push("%" + req.query.keyword + "%");
+    }
+
+    if (!currentUser || currentUser.role.name === "STUDENT") {
+      conditions.push("e.is_published = TRUE");
+    } else if (currentUser.role.name === "TEACHER") {
+      conditions.push("(e.is_published = TRUE OR e.teacher_id = $" + idx++ + ")");
+      values.push(currentUser.id);
     }
 
     whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
@@ -278,6 +305,11 @@ router.post("/:id/start", checkLogin, async function (req, res, next) {
     var sessionResult;
 
     if (!exam) {
+      helper.sendError(res, 404, "Exam not found");
+      return;
+    }
+
+    if (!isExamVisibleToUser(exam, req.currentUser)) {
       helper.sendError(res, 404, "Exam not found");
       return;
     }
@@ -511,6 +543,7 @@ router.get(
 router.get("/:id", async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    var currentUser = await authHandler.tryLoadCurrentUser(req);
     var result;
     var row;
 
@@ -530,8 +563,14 @@ router.get("/:id", async function (req, res, next) {
 
     row = result.rows[0];
 
+    if (!isExamVisibleToUser(row, currentUser)) {
+      helper.sendError(res, 404, "Exam not found");
+      return;
+    }
+
     helper.sendSuccess(res, "Exam fetched", {
       id: row.id,
+      courseId: row.course_id,
       title: row.title,
       category: row.category,
       examType: row.exam_type,

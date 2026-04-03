@@ -37,6 +37,7 @@ async function findQuestionSession(req, question) {
     return {
       canAccess: true,
       canViewExplanation: true,
+      canViewCorrectAnswer: true,
     };
   }
 
@@ -53,6 +54,7 @@ async function findQuestionSession(req, question) {
   return {
     canAccess: Number(sessionResult.rows[0].total_sessions || 0) > 0,
     canViewExplanation: Number(sessionResult.rows[0].submitted_sessions || 0) > 0,
+    canViewCorrectAnswer: Number(sessionResult.rows[0].submitted_sessions || 0) > 0,
   };
 }
 
@@ -80,6 +82,7 @@ router.get("/:id", checkLogin, async function (req, res, next) {
     var question = await findQuestionById(req, req.params.id);
     var access;
     var explanation = null;
+    var correctAnswer = null;
 
     if (!question) {
       helper.sendError(res, 404, "Question not found");
@@ -97,6 +100,10 @@ router.get("/:id", checkLogin, async function (req, res, next) {
       explanation = question.explanation;
     }
 
+    if (access.canViewCorrectAnswer) {
+      correctAnswer = question.correct_answer;
+    }
+
     helper.sendSuccess(res, "Question fetched", {
       id: question.id,
       examId: question.exam_id,
@@ -104,6 +111,7 @@ router.get("/:id", checkLogin, async function (req, res, next) {
       content: question.content,
       options: question.options,
       orderIndex: question.order_index,
+      correctAnswer: correctAnswer,
       explanation: explanation,
       audioUrl: question.audio_url,
       imageUrl: question.image_url,
