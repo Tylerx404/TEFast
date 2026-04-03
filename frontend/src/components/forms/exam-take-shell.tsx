@@ -33,6 +33,7 @@ export function ExamTakeShell({
   questions,
 }: ExamTakeShellProps) {
   const router = useRouter();
+  const [startedAt] = useState(() => Date.now());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [secondsLeft, setSecondsLeft] = useState(() => {
@@ -95,6 +96,7 @@ export function ExamTakeShell({
       })) satisfies ExamAnswerPayload[];
 
     try {
+      const durationSpentSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
       const response = await proxyApiFetch<{ id: string }>(
         "/api/proxy/exam-results",
         {
@@ -103,10 +105,7 @@ export function ExamTakeShell({
             examSessionId,
             examId,
             answers: payload,
-            durationSpentSeconds: Math.max(
-              0,
-              Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000),
-            ),
+            durationSpentSeconds,
           }),
         },
       );

@@ -22,5 +22,5 @@ export const profileSchema = z.object({
   fullName: z.string().min(2, "Họ tên cần ít nhất 2 ký tự"),
   phone: z.string().min(8, "Số điện thoại không hợp lệ"),
   avatarUrl: z.string(),
-  targetExam: z.enum(["", "TOEIC", "IELTS"]),
+  targetExam: z.enum(["", "TOEIC", "IELTS", "__NONE__"]),
 });

@@ -1,7 +1,6 @@
 "use client";
 
-import { startTransition, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -22,7 +21,6 @@ import { loginSchema } from "@/features/auth/schemas";
 import type { LoginFormValues } from "@/types/forms";
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
-  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -42,10 +40,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       });
 
       toast.success("Đăng nhập thành công");
-      startTransition(() => {
-        router.push(redirectTo || "/my-courses");
-        router.refresh();
-      });
+      window.location.assign(redirectTo || "/my-courses");
     } catch (error) {
       mapApiErrorToForm(error, form.setError);
 

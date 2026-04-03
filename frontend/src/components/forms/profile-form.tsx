@@ -27,20 +27,33 @@ import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";
 import { profileSchema } from "@/features/auth/schemas";
 import type { ProfileFormValues } from "@/types/forms";
 
+const EMPTY_TARGET_EXAM = "__NONE__";
+
+type ProfileFormStateValues = Omit<ProfileFormValues, "targetExam"> & {
+  targetExam: ProfileFormValues["targetExam"] | typeof EMPTY_TARGET_EXAM;
+};
+
 export function ProfileForm({ initialValues }: { initialValues: ProfileFormValues }) {
   const [isPending, setIsPending] = useState(false);
-  const form = useForm<ProfileFormValues>({
+  const form = useForm<ProfileFormStateValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: initialValues,
+    defaultValues: {
+      ...initialValues,
+      targetExam: initialValues.targetExam || EMPTY_TARGET_EXAM,
+    },
   });
 
-  async function onSubmit(values: ProfileFormValues) {
+  async function onSubmit(values: ProfileFormStateValues) {
     setIsPending(true);
 
     try {
       await proxyApiFetch("/api/proxy/users/profile", {
         method: "PATCH",
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          targetExam:
+            values.targetExam === EMPTY_TARGET_EXAM ? null : values.targetExam,
+        }),
       });
 
       toast.success("Đã cập nhật hồ sơ");
@@ -107,14 +120,14 @@ export function ProfileForm({ initialValues }: { initialValues: ProfileFormValue
           render={({ field }) => (
             <FormItem>
               <FormLabel>Mục tiêu thi</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn mục tiêu" />
+                    <SelectValue />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Chưa chọn</SelectItem>
+                  <SelectItem value={EMPTY_TARGET_EXAM}>Chưa chọn</SelectItem>
                   <SelectItem value="TOEIC">TOEIC</SelectItem>
                   <SelectItem value="IELTS">IELTS</SelectItem>
                 </SelectContent>

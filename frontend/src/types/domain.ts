@@ -226,6 +226,7 @@ export type ExamResultDetail = {
   wrongCount: number;
   durationSpentSeconds: number;
   feedback?: string | null;
+  reviewedAt?: string | null;
   submittedAt: string;
 };
 

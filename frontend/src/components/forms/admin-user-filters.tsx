@@ -14,14 +14,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const ALL_FILTER_VALUE = "__ALL__";
+
 export function AdminUserFilters() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [keyword, setKeyword] = useState(searchParams.get("keyword") ?? "");
-  const [role, setRole] = useState(searchParams.get("role") ?? "");
-  const [status, setStatus] = useState(searchParams.get("status") ?? "");
+  const [role, setRole] = useState(searchParams.get("role") ?? ALL_FILTER_VALUE);
+  const [status, setStatus] = useState(searchParams.get("status") ?? ALL_FILTER_VALUE);
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
@@ -32,13 +34,13 @@ export function AdminUserFilters() {
       params.delete("keyword");
     }
 
-    if (role) {
+    if (role !== ALL_FILTER_VALUE) {
       params.set("role", role);
     } else {
       params.delete("role");
     }
 
-    if (status) {
+    if (status !== ALL_FILTER_VALUE) {
       params.set("status", status);
     } else {
       params.delete("status");
@@ -65,7 +67,7 @@ export function AdminUserFilters() {
           <SelectValue placeholder="Role" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Tất cả</SelectItem>
+          <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
           <SelectItem value="STUDENT">STUDENT</SelectItem>
           <SelectItem value="TEACHER">TEACHER</SelectItem>
           <SelectItem value="ADMIN">ADMIN</SelectItem>
@@ -76,7 +78,7 @@ export function AdminUserFilters() {
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Tất cả</SelectItem>
+          <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
           <SelectItem value="ACTIVE">ACTIVE</SelectItem>
           <SelectItem value="INACTIVE">INACTIVE</SelectItem>
         </SelectContent>

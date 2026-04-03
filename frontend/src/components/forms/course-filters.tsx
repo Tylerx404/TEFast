@@ -14,15 +14,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const ALL_FILTER_VALUE = "__ALL__";
+
 export function CourseFilters() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [keyword, setKeyword] = useState(searchParams.get("keyword") ?? "");
-  const [category, setCategory] = useState(searchParams.get("category") ?? "");
+  const [category, setCategory] = useState(
+    searchParams.get("category") ?? ALL_FILTER_VALUE,
+  );
   const [isPublished, setIsPublished] = useState(
-    searchParams.get("isPublished") ?? "",
+    searchParams.get("isPublished") ?? ALL_FILTER_VALUE,
   );
 
   function submitFilters() {
@@ -34,13 +38,13 @@ export function CourseFilters() {
       params.delete("keyword");
     }
 
-    if (category) {
+    if (category !== ALL_FILTER_VALUE) {
       params.set("category", category);
     } else {
       params.delete("category");
     }
 
-    if (isPublished) {
+    if (isPublished !== ALL_FILTER_VALUE) {
       params.set("isPublished", isPublished);
     } else {
       params.delete("isPublished");
@@ -67,7 +71,7 @@ export function CourseFilters() {
           <SelectValue placeholder="Danh mục" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Tất cả</SelectItem>
+          <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
           <SelectItem value="TOEIC">TOEIC</SelectItem>
           <SelectItem value="IELTS">IELTS</SelectItem>
         </SelectContent>
@@ -77,7 +81,7 @@ export function CourseFilters() {
           <SelectValue placeholder="Trạng thái" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Tất cả</SelectItem>
+          <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
           <SelectItem value="true">Published</SelectItem>
           <SelectItem value="false">Draft</SelectItem>
         </SelectContent>
