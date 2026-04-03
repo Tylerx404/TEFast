@@ -35,8 +35,8 @@ services:
     container_name: tefast-postgres
     environment:
       POSTGRES_DB: tefast
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: tyler
+      POSTGRES_PASSWORD: Vantai_290224
     ports:
       - "5432:5432"
     healthcheck:
@@ -49,7 +49,7 @@ services:
 
   redis:
     image: redis
-    container_name: tefast-postgres
+    container_name: tefast-redis
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
