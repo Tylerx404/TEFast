@@ -104,9 +104,11 @@ export type CourseUpdateInput = Partial<CourseCreateInput>;
 export type EnrollmentItem = {
   id: string;
   courseId: string;
+  courseSlug?: string | null;
   courseTitle: string;
   progressPercent: number;
   lastLessonId?: string | null;
+  lastLessonOrderIndex?: number | null;
   status: string;
 };
 
@@ -218,6 +220,7 @@ export type ExamAnswerPayload = {
 
 export type ExamResultSummary = {
   id: string;
+  publicSlug?: string | null;
   examId: string;
   examTitle?: string;
   score: number;
@@ -226,7 +229,9 @@ export type ExamResultSummary = {
 
 export type ExamResultDetail = {
   id: string;
+  publicSlug?: string | null;
   examId: string;
+  examTitle?: string | null;
   userId: string;
   score: number;
   correctCount: number;
@@ -301,6 +306,7 @@ export type UploadFileItem = {
 
 export type CommentItem = {
   id: string;
+  courseTitle?: string | null;
   courseId?: string | null;
   lessonId?: string | null;
   parentCommentId?: string | null;
@@ -308,7 +314,7 @@ export type CommentItem = {
   createdAt: string;
   updatedAt?: string;
   user?: {
-    id: string;
+    id?: string;
     fullName: string;
   };
 };

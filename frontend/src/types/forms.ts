@@ -5,6 +5,20 @@ export type LoginFormValues = {
   password: string;
 };
 
+export type ForgotPasswordFormValues = {
+  email: string;
+};
+
+export type ResendVerificationFormValues = {
+  email: string;
+};
+
+export type ResetPasswordFormValues = {
+  token: string;
+  password: string;
+  confirmPassword: string;
+};
+
 export type RegisterFormValues = {
   fullName: string;
   email: string;

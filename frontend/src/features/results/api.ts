@@ -11,8 +11,8 @@ export async function getMyResults(filters: ResultFilters = {}) {
   );
 }
 
-export async function getResult(resultId: string) {
-  return safeServerApiFetch<ExamResultDetail>(`/exam-results/${resultId}`, undefined, {
+export async function getResult(resultKey: string) {
+  return safeServerApiFetch<ExamResultDetail>(`/exam-results/${resultKey}`, undefined, {
     auth: true,
   });
 }

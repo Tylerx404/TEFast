@@ -4,7 +4,6 @@ import { DeleteResourceButton } from "@/components/teacher/delete-resource-butto
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  deleteTeacherQuestion,
   getTeacherQuestion,
 } from "@/features/teacher/questions";
 import { requireTeacherSession } from "@/lib/auth/session";
@@ -37,7 +36,7 @@ export default async function TeacherEditQuestionPage({
           <DeleteResourceButton
             label="Question"
             description="Câu hỏi này sẽ bị xóa khỏi exam."
-            onDelete={() => deleteTeacherQuestion(questionId)}
+            deletePath={`/api/proxy/questions/${questionId}`}
             redirectTo={`/teacher/exams/${question.data.examId}/questions`}
           />
         </div>

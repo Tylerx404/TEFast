@@ -97,7 +97,7 @@ export function ExamTakeShell({
 
     try {
       const durationSpentSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-      const response = await proxyApiFetch<{ id: string }>(
+      const response = await proxyApiFetch<{ id: string; publicSlug?: string | null }>(
         "/api/proxy/exam-results",
         {
           method: "POST",
@@ -111,7 +111,7 @@ export function ExamTakeShell({
       );
 
       toast.success("Đã nộp bài thành công");
-      router.push(`/results/${response.data.id}`);
+      router.push(`/results/${response.data.publicSlug ?? response.data.id}`);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiRequestError) {

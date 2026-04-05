@@ -24,7 +24,12 @@ export async function POST(request: Request) {
       baseUrl: appConfig.apiBaseUrl,
     });
 
-    const nextResponse = NextResponse.json(response, {
+    const nextResponse = NextResponse.json({
+      success: true,
+      message: response.message,
+      data: response.data,
+      meta: response.meta,
+    }, {
       status: 200,
     });
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getResult } from "@/features/results/api";
 import { requireSession } from "@/lib/auth/session";
 import { formatDate } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 type ResultDetailPageProps = {
   params: Promise<{
@@ -31,11 +32,15 @@ export default async function ResultDetailPage({ params }: ResultDetailPageProps
     );
   }
 
+  if (result.data.publicSlug && id !== result.data.publicSlug) {
+    redirect(`/results/${result.data.publicSlug}`);
+  }
+
   return (
     <PageShell>
       <SectionHeading
         eyebrow="Result Detail"
-        title={`Kết quả bài thi ${result.data.examId}`}
+        title={`Kết quả bài thi ${result.data.examTitle ?? result.data.examId}`}
         description={`Bài làm được nộp vào ${formatDate(result.data.submittedAt)}.`}
       />
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

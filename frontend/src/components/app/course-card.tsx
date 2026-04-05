@@ -54,7 +54,7 @@ export function CourseCard({ course }: CourseCardProps) {
       </CardContent>
       <CardFooter>
         <Button asChild className="w-full justify-between">
-          <Link href={`/courses/${course.id}`}>
+          <Link href={`/courses/${course.slug}`}>
             Xem chi tiết
             <ArrowUpRight className="h-4 w-4" />
           </Link>

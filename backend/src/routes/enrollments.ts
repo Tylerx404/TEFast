@@ -96,9 +96,11 @@ router.get("/my", checkLogin, async function (req, res, next) {
 
     values.push(limit, offset);
     result = await pool.query(
-      `SELECT e.*, c.title AS course_title
+      `SELECT e.*, c.title AS course_title, c.slug AS course_slug,
+              l.order_index AS last_lesson_order_index
        FROM enrollments e
        LEFT JOIN courses c ON c.id = e.course_id
+       LEFT JOIN lessons l ON l.id = e.last_lesson_id
        WHERE ${whereClause}
        ORDER BY e.enrolled_at DESC
        LIMIT $${idx++} OFFSET $${idx++}`,
@@ -109,9 +111,14 @@ router.get("/my", checkLogin, async function (req, res, next) {
       return {
         id: row.id,
         courseId: row.course_id,
+        courseSlug: row.course_slug,
         courseTitle: row.course_title,
         progressPercent: readEnrollmentProgress(row),
         lastLessonId: row.last_lesson_id,
+        lastLessonOrderIndex:
+          row.last_lesson_order_index !== null && row.last_lesson_order_index !== undefined
+            ? parseInt(row.last_lesson_order_index, 10)
+            : null,
         status: row.status,
       };
     });

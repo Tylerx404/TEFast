@@ -8,9 +8,13 @@ var checkLogin = authHandler.checkLogin;
 async function findCommentById(req, commentId) {
   var pool = req.app.locals.pg;
   var result = await pool.query(
-    `SELECT c.*, u.full_name
+    `SELECT c.*, u.full_name,
+            COALESCE(course_direct.title, course_from_lesson.title) AS course_title
      FROM comments c
      LEFT JOIN users u ON u.id = c.user_id
+     LEFT JOIN courses course_direct ON course_direct.id = c.course_id
+     LEFT JOIN lessons l ON l.id = c.lesson_id
+     LEFT JOIN courses course_from_lesson ON course_from_lesson.id = l.course_id
      WHERE c.id = $1
      LIMIT 1`,
     [commentId],
@@ -21,6 +25,32 @@ async function findCommentById(req, commentId) {
   }
 
   return result.rows[0];
+}
+
+function serializeComment(comment, options) {
+  var settings = options || {};
+  var payload: any = {
+    content: comment.content,
+    courseTitle: comment.course_title || null,
+    createdAt: comment.created_at,
+    user: {
+      fullName: comment.full_name || "Hoc vien",
+    },
+  };
+
+  if (settings.includeId) {
+    payload.id = comment.id;
+  }
+
+  if (settings.includeParentCommentId) {
+    payload.parentCommentId = comment.parent_comment_id || null;
+  }
+
+  if (settings.includeUpdatedAt && comment.updated_at) {
+    payload.updatedAt = comment.updated_at;
+  }
+
+  return payload;
 }
 
 async function ensureCommentOwnerOrAdmin(req, res, commentId) {
@@ -89,10 +119,14 @@ router.get("/", async function (req, res, next) {
 
     values.push(limit, offset);
     result = await pool.query(
-      `SELECT c.id, c.course_id, c.lesson_id, c.parent_comment_id, c.content,
-              c.created_at, u.id AS user_id, u.full_name
+      `SELECT c.id, c.parent_comment_id, c.content, c.created_at, c.updated_at,
+              u.full_name,
+              COALESCE(course_direct.title, course_from_lesson.title) AS course_title
        FROM comments c
        LEFT JOIN users u ON u.id = c.user_id
+       LEFT JOIN courses course_direct ON course_direct.id = c.course_id
+       LEFT JOIN lessons l ON l.id = c.lesson_id
+       LEFT JOIN courses course_from_lesson ON course_from_lesson.id = l.course_id
        WHERE ${whereClause}
        ORDER BY c.created_at ASC
        LIMIT $${idx++} OFFSET $${idx++}`,
@@ -100,18 +134,11 @@ router.get("/", async function (req, res, next) {
     );
 
     comments = result.rows.map(function (row) {
-      return {
-        id: row.id,
-        courseId: row.course_id,
-        lessonId: row.lesson_id,
-        parentCommentId: row.parent_comment_id,
-        content: row.content,
-        user: {
-          id: row.user_id,
-          fullName: row.full_name,
-        },
-        createdAt: row.created_at,
-      };
+      return serializeComment(row, {
+        includeId: true,
+        includeParentCommentId: true,
+        includeUpdatedAt: true,
+      });
     });
 
     helper.sendSuccess(
@@ -131,6 +158,7 @@ router.post("/", checkLogin, async function (req, res, next) {
     var pool = req.app.locals.pg;
     var body = req.body || {};
     var result;
+    var createdComment;
 
     if (!body.content || (!body.courseId && !body.lessonId)) {
       helper.sendError(res, 400, "Validation failed", [
@@ -158,11 +186,15 @@ router.post("/", checkLogin, async function (req, res, next) {
       ],
     );
 
+    createdComment = await findCommentById(req, result.rows[0].id);
+
     helper.sendCreated(res, "Comment created", {
-      id: result.rows[0].id,
-      content: result.rows[0].content,
-      parentCommentId: result.rows[0].parent_comment_id,
-      createdAt: result.rows[0].created_at,
+      content: createdComment ? createdComment.content : result.rows[0].content,
+      courseTitle: createdComment ? createdComment.course_title || null : null,
+      createdAt: createdComment ? createdComment.created_at : result.rows[0].created_at,
+      user: {
+        fullName: req.currentUser.fullName || "Hoc vien",
+      },
     });
   } catch (error) {
     console.error("create comment error:", error);
@@ -179,14 +211,14 @@ router.get("/:id", async function (req, res, next) {
       return;
     }
 
-    helper.sendSuccess(res, "Comment fetched", {
-      id: comment.id,
-      courseId: comment.course_id,
-      lessonId: comment.lesson_id,
-      parentCommentId: comment.parent_comment_id,
-      content: comment.content,
-      createdAt: comment.created_at,
-    });
+    helper.sendSuccess(
+      res,
+      "Comment fetched",
+      serializeComment(comment, {
+        includeParentCommentId: true,
+        includeUpdatedAt: true,
+      }),
+    );
   } catch (error) {
     console.error("get comment error:", error);
     helper.sendError(res, 500, "Internal server error");
@@ -199,6 +231,7 @@ router.patch("/:id", checkLogin, async function (req, res, next) {
     var body = req.body || {};
     var comment = await ensureCommentOwnerOrAdmin(req, res, req.params.id);
     var result;
+    var updatedComment;
 
     if (!comment) {
       return;
@@ -222,11 +255,26 @@ router.patch("/:id", checkLogin, async function (req, res, next) {
       [body.content, req.params.id],
     );
 
-    helper.sendSuccess(res, "Comment updated", {
-      id: result.rows[0].id,
-      content: result.rows[0].content,
-      updatedAt: result.rows[0].updated_at,
-    });
+    updatedComment = await findCommentById(req, req.params.id);
+
+    helper.sendSuccess(
+      res,
+      "Comment updated",
+      updatedComment
+        ? serializeComment(updatedComment, {
+            includeParentCommentId: true,
+            includeUpdatedAt: true,
+          })
+        : {
+            content: result.rows[0].content,
+            courseTitle: null,
+            createdAt: comment.created_at,
+            updatedAt: result.rows[0].updated_at,
+            user: {
+              fullName: comment.full_name || "Hoc vien",
+            },
+          },
+    );
   } catch (error) {
     console.error("update comment error:", error);
     helper.sendError(res, 500, "Internal server error");
@@ -244,9 +292,7 @@ router.delete("/:id", checkLogin, async function (req, res, next) {
 
     await pool.query("DELETE FROM comments WHERE id = $1", [req.params.id]);
 
-    helper.sendSuccess(res, "Comment deleted", {
-      id: req.params.id,
-    });
+    helper.sendSuccess(res, "Comment deleted", null);
   } catch (error) {
     console.error("delete comment error:", error);
     helper.sendError(res, 500, "Internal server error");

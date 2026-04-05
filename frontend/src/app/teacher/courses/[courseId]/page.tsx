@@ -6,7 +6,7 @@ import { DeleteResourceButton } from "@/components/teacher/delete-resource-butto
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deleteTeacherCourse, getTeacherCourse } from "@/features/teacher/courses";
+import { getTeacherCourse } from "@/features/teacher/courses";
 import { getTeacherLessons } from "@/features/teacher/lessons";
 import { requireTeacherSession } from "@/lib/auth/session";
 import { formatCurrency } from "@/lib/utils";
@@ -53,7 +53,7 @@ export default async function TeacherCourseDetailPage({
           <DeleteResourceButton
             label="Course"
             description="Thao tác này sẽ xóa course hiện tại. Hãy chắc chắn bạn không cần giữ lại liên kết đến lessons hoặc exams."
-            onDelete={() => deleteTeacherCourse(courseId)}
+            deletePath={`/api/proxy/courses/${courseId}`}
             redirectTo="/teacher/courses"
           />
         </div>

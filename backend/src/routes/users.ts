@@ -16,7 +16,8 @@ router.get("/profile", checkLogin, async function (req, res, next) {
     var pool = req.app.locals.pg;
 
     var result = await pool.query(
-      `SELECT u.id, u.full_name, u.email, u.phone, u.avatar_url, u.target_exam
+      `SELECT u.id, u.full_name, u.email, u.phone, u.avatar_url,
+              u.target_exam, u.status
        FROM users u
        WHERE u.id = $1 AND COALESCE(u.is_deleted, FALSE) = FALSE
        LIMIT 1`,
@@ -37,6 +38,7 @@ router.get("/profile", checkLogin, async function (req, res, next) {
       phone: row.phone,
       avatarUrl: row.avatar_url,
       targetExam: row.target_exam,
+      status: String(row.status || "").toUpperCase(),
     });
   } catch (error) {
     console.error("get profile error:", error);
@@ -101,7 +103,7 @@ router.patch("/profile", checkLogin, async function (req, res, next) {
     var result = await pool.query(
       `UPDATE users SET ${fields.join(", ")}
        WHERE id = $${idx} AND COALESCE(is_deleted, FALSE) = FALSE
-       RETURNING id, full_name, phone, avatar_url, target_exam, updated_at`,
+       RETURNING full_name, phone, avatar_url, target_exam, updated_at`,
       values,
     );
 

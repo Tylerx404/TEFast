@@ -3,7 +3,6 @@ import { TeacherVocabularyForm } from "@/components/forms/teacher-vocabulary-for
 import { DeleteResourceButton } from "@/components/teacher/delete-resource-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  deleteTeacherVocabulary,
   getTeacherVocabularyDetail,
 } from "@/features/teacher/vocabulary";
 import { requireTeacherSession } from "@/lib/auth/session";
@@ -32,7 +31,7 @@ export default async function TeacherEditVocabularyPage({
         <DeleteResourceButton
           label="Vocabulary"
           description="Mục từ này sẽ bị xóa."
-          onDelete={() => deleteTeacherVocabulary(vocabularyId)}
+          deletePath={`/api/proxy/vocabulary/${vocabularyId}`}
           redirectTo="/teacher/vocabulary"
         />
       </div>

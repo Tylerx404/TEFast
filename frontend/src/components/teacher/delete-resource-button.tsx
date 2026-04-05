@@ -15,19 +15,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, proxyApiFetch } from "@/lib/api/client";
 
 type DeleteResourceButtonProps = {
   label: string;
   description: string;
-  onDelete: () => Promise<unknown>;
+  deletePath: string;
   redirectTo?: string;
 };
 
 export function DeleteResourceButton({
   label,
   description,
-  onDelete,
+  deletePath,
   redirectTo,
 }: DeleteResourceButtonProps) {
   const router = useRouter();
@@ -37,7 +37,9 @@ export function DeleteResourceButton({
     setIsPending(true);
 
     try {
-      await onDelete();
+      await proxyApiFetch(deletePath, {
+        method: "DELETE",
+      });
       toast.success(`${label} đã được xóa`);
 
       if (redirectTo) {

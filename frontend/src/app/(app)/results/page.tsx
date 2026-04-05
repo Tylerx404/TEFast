@@ -50,7 +50,7 @@ export default async function ResultsPage() {
                   <TableCell>{formatDate(result.submittedAt)}</TableCell>
                   <TableCell className="text-right">
                     <Link
-                      href={`/results/${result.id}`}
+                      href={`/results/${result.publicSlug ?? result.id}`}
                       className="font-medium text-[hsl(var(--primary))]"
                     >
                       Xem

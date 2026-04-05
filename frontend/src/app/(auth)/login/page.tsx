@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { PageShell } from "@/components/app/page-shell";
 import { SectionHeading } from "@/components/app/section-heading";
@@ -9,11 +10,31 @@ type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function sanitizeRedirectTo(value: string | string[] | undefined) {
+  const resolvedValue = Array.isArray(value) ? value[0] : value;
+
+  if (
+    typeof resolvedValue !== "string" ||
+    !resolvedValue.startsWith("/") ||
+    resolvedValue.startsWith("//")
+  ) {
+    return undefined;
+  }
+
+  return resolvedValue;
+}
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const redirectTo = Array.isArray(params.redirectTo)
-    ? params.redirectTo[0]
-    : params.redirectTo;
+  const redirectTo = sanitizeRedirectTo(params.redirectTo);
+
+  if (params.email !== undefined || params.password !== undefined) {
+    redirect(
+      redirectTo
+        ? `/login?redirectTo=${encodeURIComponent(redirectTo)}`
+        : "/login",
+    );
+  }
 
   return (
     <PageShell className="justify-center">
@@ -22,24 +43,36 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <CardHeader className="px-0">
             <SectionHeading
               eyebrow="Welcome back"
-              title="Đăng nhập để tiếp tục lộ trình học đang dang dở"
-              description="JWT được giữ trong `httpOnly` cookie để client không phải lưu token vào `localStorage`."
+              title="Dang nhap de tiep tuc lo trinh hoc dang do"
+              description="JWT duoc giu trong httpOnly cookie de client khong phai luu token vao localStorage."
             />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <SectionHeading
-              title="Đăng nhập"
-              description="Dùng email và mật khẩu đã đăng ký."
+              title="Dang nhap"
+              description="Dung email va mat khau da dang ky de tiep tuc hoc tap."
             />
           </CardHeader>
           <CardContent className="space-y-6">
             <LoginForm redirectTo={redirectTo} />
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Chưa có tài khoản?{" "}
+              Quen mat khau?{" "}
+              <Link href="/forgot-password" className="font-medium text-[hsl(var(--primary))]">
+                Dat lai tai day
+              </Link>
+            </p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Muon xac thuc email sau?{" "}
+              <Link href="/resend-verification" className="font-medium text-[hsl(var(--primary))]">
+                Gui lai tai day
+              </Link>
+            </p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Chua co tai khoan?{" "}
               <Link href="/register" className="font-medium text-[hsl(var(--primary))]">
-                Đăng ký ngay
+                Dang ky ngay
               </Link>
             </p>
           </CardContent>

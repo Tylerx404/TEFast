@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import { DeleteResourceButton } from "@/components/teacher/delete-resource-button";
 import {
-  deleteTeacherVocabulary,
   getTeacherVocabulary,
 } from "@/features/teacher/vocabulary";
 import { requireTeacherSession } from "@/lib/auth/session";
@@ -31,7 +30,7 @@ export default async function TeacherVocabularyPage({
   const filters = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
-  const vocabulary = await getTeacherVocabulary(filters);
+  const vocabulary = await getTeacherVocabulary({ limit: "100", ...filters });
 
   return (
     <div className="space-y-6">
@@ -77,7 +76,7 @@ export default async function TeacherVocabularyPage({
                       <DeleteResourceButton
                         label="Vocabulary"
                         description="Mục từ này sẽ bị xóa khỏi kho từ vựng."
-                        onDelete={() => deleteTeacherVocabulary(item.id)}
+                        deletePath={`/api/proxy/vocabulary/${item.id}`}
                       />
                     </div>
                   </TableCell>

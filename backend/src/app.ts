@@ -4,6 +4,7 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var Pool = require("pg").Pool;
 var helper = require("./utils/helper");
+var mailHandler = require("./utils/mailHandler");
 
 var app = express();
 var PORT = Number(process.env.PORT) || 3001;
@@ -54,6 +55,18 @@ if (require.main === module) {
       console.log("da connect postgres");
       app.listen(PORT, HOST, function () {
         console.log("Server running at http://" + HOST + ":" + PORT);
+
+        mailHandler.warmupTransporter().then(function (result) {
+          if (result && result.success) {
+            console.log("smtp transporter is ready");
+            return;
+          }
+
+          console.warn(
+            "smtp transporter warmup failed:",
+            (result && result.message) || "unknown error",
+          );
+        });
       });
     })
     .catch(function (error) {

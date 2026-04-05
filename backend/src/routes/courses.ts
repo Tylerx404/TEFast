@@ -27,6 +27,23 @@ async function findCourseById(req, courseId) {
   return result.rows[0];
 }
 
+async function findCourseByKey(req, courseKey) {
+  var pool = req.app.locals.pg;
+  var result = await pool.query(
+    `SELECT id, teacher_id, is_published, slug
+     FROM courses
+     WHERE id::text = $1 OR slug = $1
+     LIMIT 1`,
+    [courseKey],
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0];
+}
+
 function isCourseVisibleToUser(course, currentUser) {
   if (!course) {
     return false;
@@ -65,9 +82,9 @@ async function ensureCourseOwnerOrAdmin(req, res, courseId) {
   return null;
 }
 
-async function buildCourseLessonAccess(req, courseId) {
+async function buildCourseLessonAccess(req, courseKey) {
   var pool = req.app.locals.pg;
-  var course = await findCourseById(req, courseId);
+  var course = await findCourseByKey(req, courseKey);
   var currentUser;
   var enrollmentResult;
 
@@ -105,13 +122,39 @@ async function buildCourseLessonAccess(req, courseId) {
        AND user_id = $2
        AND status IN ('ACTIVE', 'COMPLETED')
      LIMIT 1`,
-    [courseId, currentUser.id],
+    [course.id, currentUser.id],
   );
 
   return {
     course: course,
     canViewAll: enrollmentResult.rows.length > 0,
   };
+}
+
+async function findCourseLessonByKey(req, courseId, lessonKey) {
+  var pool = req.app.locals.pg;
+  var parsedOrderIndex = Number.parseInt(String(lessonKey), 10);
+  var hasOrderIndex = Number.isInteger(parsedOrderIndex);
+  var result = await pool.query(
+    `SELECT id, course_id, title, content_type, content, attachment_url,
+            order_index, is_preview
+     FROM lessons
+     WHERE course_id = $1
+       AND (id::text = $2 OR ($3::boolean = TRUE AND order_index = $4))
+     LIMIT 1`,
+    [
+      courseId,
+      lessonKey,
+      hasOrderIndex,
+      hasOrderIndex ? parsedOrderIndex : null,
+    ],
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0];
 }
 
 router.get("/", async function (req, res, next) {
@@ -321,7 +364,7 @@ router.get("/:courseId/lessons", async function (req, res, next) {
        FROM lessons
        WHERE course_id = $1 ${condition}
        ORDER BY order_index ASC, created_at ASC`,
-      [req.params.courseId],
+      [access.course.id],
     );
 
     lessons = result.rows.map(function (row) {
@@ -338,6 +381,48 @@ router.get("/:courseId/lessons", async function (req, res, next) {
     helper.sendSuccess(res, "Course lessons fetched", lessons);
   } catch (error) {
     console.error("list course lessons error:", error);
+    helper.sendError(res, 500, "Internal server error");
+  }
+});
+
+router.get("/:courseId/lessons/:lessonKey", checkLogin, async function (req, res, next) {
+  try {
+    var access = await buildCourseLessonAccess(req, req.params.courseId);
+    var lesson;
+
+    if (!access) {
+      helper.sendError(res, 404, "Course not found");
+      return;
+    }
+
+    lesson = await findCourseLessonByKey(
+      req,
+      access.course.id,
+      req.params.lessonKey,
+    );
+
+    if (!lesson) {
+      helper.sendError(res, 404, "Lesson not found");
+      return;
+    }
+
+    if (!access.canViewAll && !lesson.is_preview) {
+      helper.sendError(res, 403, "Forbidden");
+      return;
+    }
+
+    helper.sendSuccess(res, "Course lesson fetched", {
+      id: lesson.id,
+      courseId: lesson.course_id,
+      title: lesson.title,
+      contentType: lesson.content_type,
+      content: lesson.content,
+      attachmentUrl: lesson.attachment_url,
+      orderIndex: lesson.order_index,
+      isPreview: lesson.is_preview,
+    });
+  } catch (error) {
+    console.error("get course lesson error:", error);
     helper.sendError(res, 500, "Internal server error");
   }
 });
@@ -504,7 +589,7 @@ router.get("/:id", async function (req, res, next) {
               (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = c.id) AS enrollment_count
        FROM courses c
        LEFT JOIN users u ON u.id = c.teacher_id
-       WHERE c.id = $1
+       WHERE c.id::text = $1 OR c.slug = $1
        LIMIT 1`,
       [req.params.id],
     );

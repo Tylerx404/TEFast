@@ -340,7 +340,6 @@ router.post("/:id/start", checkLogin, async function (req, res, next) {
 
     helper.sendSuccess(res, "Exam session started", {
       examSessionId: sessionResult.rows[0].id,
-      examId: req.params.id,
       startedAt: startedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
     });
