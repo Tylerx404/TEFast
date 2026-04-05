@@ -2,35 +2,35 @@ import Link from "next/link";
 
 import { PageShell } from "@/components/app/page-shell";
 import { SectionHeading } from "@/components/app/section-heading";
-import { RegisterForm } from "@/components/forms/register-form";
+import { ForgotPasswordForm } from "@/components/forms/forgot-password-form";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-export default function RegisterPage() {
+export default function ForgotPasswordPage() {
   return (
     <PageShell className="justify-center">
-      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[0.92fr_1.08fr]">
         <Card className="hidden border-none bg-transparent shadow-none lg:block">
           <CardHeader className="px-0">
             <SectionHeading
-              eyebrow="Create account"
-              title="Start your TOEIC or IELTS journey with one account"
-              description="You can log in right away, and verify your email later if you want."
+              eyebrow="Recover access"
+              title="Lay lai quyen truy cap tai khoan bang email reset mat khau"
+              description="Backend tao token tam thoi, gui link qua SMTP Brevo va cho phep ban dat lai mat khau an toan."
             />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <SectionHeading
-              title="Create account"
-              description="Fill in the basics and check your inbox if you want to confirm the account later."
+              title="Quen mat khau"
+              description="Nhap email da dang ky de nhan link dat lai mat khau."
             />
           </CardHeader>
           <CardContent className="space-y-6">
-            <RegisterForm />
+            <ForgotPasswordForm />
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Already have an account?{" "}
+              Nho mat khau roi?{" "}
               <Link href="/login" className="font-medium text-[hsl(var(--primary))]">
-                Log in
+                Dang nhap
               </Link>
             </p>
           </CardContent>

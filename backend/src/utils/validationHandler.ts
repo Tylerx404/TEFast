@@ -61,6 +61,44 @@ var validationHandler = {
     body("password").notEmpty().withMessage("password khong duoc de trong"),
   ],
 
+  forgotPasswordValidation: [
+    body("email")
+      .notEmpty()
+      .withMessage("email khong duoc de trong")
+      .bail()
+      .isEmail()
+      .withMessage("khong phai email"),
+  ],
+
+  resetPasswordValidation: [
+    body("token").notEmpty().withMessage("token khong duoc de trong"),
+
+    body("password")
+      .notEmpty()
+      .withMessage("password khong duoc de trong")
+      .bail()
+      .isStrongPassword(options.password)
+      .withMessage(
+        util.format(
+          "password phai co it nhat %d ki tu, trong do it nhat %d ki tu so",
+          options.password.minLength,
+          options.password.minNumbers,
+        ),
+      ),
+
+    body("confirmPassword")
+      .notEmpty()
+      .withMessage("confirmPassword khong duoc de trong")
+      .bail()
+      .custom(function (value, { req }) {
+        if (value != req.body.password) {
+          throw new Error("confirmPassword khong khop");
+        }
+
+        return true;
+      }),
+  ],
+
   validateResult: function (req, res, next) {
     var result = validationResult(req);
 

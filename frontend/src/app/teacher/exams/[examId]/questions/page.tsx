@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import { getTeacherExam } from "@/features/teacher/exams";
 import {
-  deleteTeacherQuestion,
   getTeacherQuestions,
 } from "@/features/teacher/questions";
 import { requireTeacherSession } from "@/lib/auth/session";
@@ -71,7 +70,7 @@ export default async function TeacherExamQuestionsPage({
                       <DeleteResourceButton
                         label="Question"
                         description="Câu hỏi này sẽ bị xóa khỏi exam."
-                        onDelete={() => deleteTeacherQuestion(question.id)}
+                        deletePath={`/api/proxy/questions/${question.id}`}
                       />
                     </div>
                   </TableCell>

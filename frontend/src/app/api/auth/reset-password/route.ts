@@ -3,14 +3,10 @@ import { NextResponse } from "next/server";
 import { apiFetch, ApiRequestError } from "@/lib/api/client";
 import { appConfig } from "@/lib/config";
 
-type RegisterPayload = {
-  email: string;
-};
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const response = await apiFetch<RegisterPayload>("/auth/register", {
+    const response = await apiFetch("/auth/reset-password", {
       method: "POST",
       body: JSON.stringify(body),
     }, {
@@ -22,8 +18,6 @@ export async function POST(request: Request) {
       message: response.message,
       data: response.data,
       meta: response.meta,
-    }, {
-      status: 201,
     });
   } catch (error) {
     if (error instanceof ApiRequestError) {
@@ -40,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: "Register proxy failed",
+        message: "Reset password proxy failed",
       },
       { status: 500 },
     );

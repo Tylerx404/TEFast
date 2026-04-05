@@ -15,51 +15,40 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resetPasswordSchema } from "@/features/auth/schemas";
 import { proxyApiFetch, ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";
-import { loginSchema } from "@/features/auth/schemas";
-import type { LoginFormValues } from "@/types/forms";
+import type { ResetPasswordFormValues } from "@/types/forms";
 
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function ResetPasswordForm({ token }: { token: string }) {
   const [isPending, setIsPending] = useState(false);
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      email: "",
+      token,
       password: "",
+      confirmPassword: "",
     },
   });
 
-  function getSafeRedirectTo() {
-    if (
-      typeof redirectTo === "string" &&
-      redirectTo.startsWith("/") &&
-      !redirectTo.startsWith("//")
-    ) {
-      return redirectTo;
-    }
-
-    return "/my-courses";
-  }
-
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: ResetPasswordFormValues) {
     setIsPending(true);
 
     try {
-      await proxyApiFetch("/api/auth/login", {
+      await proxyApiFetch("/api/auth/reset-password", {
         method: "POST",
         body: JSON.stringify(values),
       });
 
-      toast.success("Đăng nhập thành công");
-      window.location.replace(getSafeRedirectTo());
+      toast.success("Password reset successful");
+      window.location.assign("/login");
     } catch (error) {
       mapApiErrorToForm(error, form.setError);
 
       if (error instanceof ApiRequestError) {
         toast.error(error.message);
       } else {
-        toast.error("Không thể đăng nhập lúc này");
+        toast.error("Unable to reset password right now");
       }
     } finally {
       setIsPending(false);
@@ -71,12 +60,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       <form className="grid gap-5" method="post" onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}
-          name="email"
+          name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>New password</FormLabel>
               <FormControl>
-                <Input placeholder="student1@tefast.vn" {...field} />
+                <Input type="password" placeholder="Password@123" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -84,10 +73,10 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         />
         <FormField
           control={form.control}
-          name="password"
+          name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mật khẩu</FormLabel>
+              <FormLabel>Confirm password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="Password@123" {...field} />
               </FormControl>
@@ -96,7 +85,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           )}
         />
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isPending ? "Updating..." : "Update password"}
         </Button>
       </form>
     </Form>

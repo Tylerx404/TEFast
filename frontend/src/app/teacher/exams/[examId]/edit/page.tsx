@@ -4,7 +4,7 @@ import { DeleteResourceButton } from "@/components/teacher/delete-resource-butto
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTeacherCourses } from "@/features/teacher/courses";
-import { deleteTeacherExam, getTeacherExam } from "@/features/teacher/exams";
+import { getTeacherExam } from "@/features/teacher/exams";
 import { requireTeacherSession } from "@/lib/auth/session";
 
 type TeacherEditExamPageProps = {
@@ -38,7 +38,7 @@ export default async function TeacherEditExamPage({
           <DeleteResourceButton
             label="Exam"
             description="Đề thi sẽ bị xóa khỏi teacher area."
-            onDelete={() => deleteTeacherExam(examId)}
+            deletePath={`/api/proxy/exams/${examId}`}
             redirectTo="/teacher/exams"
           />
         </div>

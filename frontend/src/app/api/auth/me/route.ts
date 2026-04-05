@@ -25,7 +25,12 @@ export async function GET() {
       token,
     });
 
-    return NextResponse.json(response);
+    return NextResponse.json({
+      success: true,
+      message: response.message,
+      data: response.data,
+      meta: response.meta,
+    });
   } catch (error) {
     if (error instanceof ApiRequestError) {
       const response = NextResponse.json(

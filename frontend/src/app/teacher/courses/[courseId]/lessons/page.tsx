@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getTeacherCourse } from "@/features/teacher/courses";
-import { deleteTeacherLesson, getTeacherLessons } from "@/features/teacher/lessons";
+import { getTeacherLessons } from "@/features/teacher/lessons";
 import { requireTeacherSession } from "@/lib/auth/session";
 
 type TeacherCourseLessonsPageProps = {
@@ -85,7 +85,7 @@ export default async function TeacherCourseLessonsPage({
                       <DeleteResourceButton
                         label="Lesson"
                         description="Lesson sẽ bị xóa khỏi course hiện tại."
-                        onDelete={() => deleteTeacherLesson(lesson.id)}
+                        deletePath={`/api/proxy/lessons/${lesson.id}`}
                       />
                     </div>
                   </TableCell>

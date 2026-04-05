@@ -3,7 +3,7 @@ import { TeacherCourseForm } from "@/components/forms/teacher-course-form";
 import { DeleteResourceButton } from "@/components/teacher/delete-resource-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deleteTeacherCourse, getTeacherCourse } from "@/features/teacher/courses";
+import { getTeacherCourse } from "@/features/teacher/courses";
 import { requireTeacherSession } from "@/lib/auth/session";
 
 type TeacherEditCoursePageProps = {
@@ -37,7 +37,7 @@ export default async function TeacherEditCoursePage({
           <DeleteResourceButton
             label="Course"
             description="Xóa khóa học sẽ làm mất khả năng truy cập tới course này."
-            onDelete={() => deleteTeacherCourse(courseId)}
+            deletePath={`/api/proxy/courses/${courseId}`}
             redirectTo="/teacher/courses"
           />
         </div>

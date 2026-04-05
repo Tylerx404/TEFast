@@ -3,7 +3,7 @@ import { TeacherLessonForm } from "@/components/forms/teacher-lesson-form";
 import { DeleteResourceButton } from "@/components/teacher/delete-resource-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deleteTeacherLesson, getTeacherLesson } from "@/features/teacher/lessons";
+import { getTeacherLesson } from "@/features/teacher/lessons";
 import { requireTeacherSession } from "@/lib/auth/session";
 
 type TeacherEditLessonPageProps = {
@@ -34,7 +34,7 @@ export default async function TeacherEditLessonPage({
           <DeleteResourceButton
             label="Lesson"
             description="Lesson sẽ bị xóa khỏi course."
-            onDelete={() => deleteTeacherLesson(lessonId)}
+            deletePath={`/api/proxy/lessons/${lessonId}`}
             redirectTo={`/teacher/courses/${lesson.data.courseId}/lessons`}
           />
         </div>

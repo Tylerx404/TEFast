@@ -138,10 +138,17 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
-  const response = await fetch(resolveUrl(path, options.baseUrl ?? appConfig.apiBaseUrl), {
-    ...init,
-    headers,
-  });
+  const url = resolveUrl(path, options.baseUrl ?? appConfig.apiBaseUrl);
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new ApiRequestError("Unable to reach API server", 503);
+  }
 
   return parseEnvelope<T>(response);
 }

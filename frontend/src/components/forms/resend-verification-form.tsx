@@ -15,51 +15,39 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resendVerificationSchema } from "@/features/auth/schemas";
 import { proxyApiFetch, ApiRequestError } from "@/lib/api/client";
 import { mapApiErrorToForm } from "@/lib/forms/map-api-error-to-form";
-import { loginSchema } from "@/features/auth/schemas";
-import type { LoginFormValues } from "@/types/forms";
+import type { ResendVerificationFormValues } from "@/types/forms";
 
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function ResendVerificationForm({ initialEmail }: { initialEmail?: string }) {
   const [isPending, setIsPending] = useState(false);
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const form = useForm<ResendVerificationFormValues>({
+    resolver: zodResolver(resendVerificationSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: initialEmail ?? "",
     },
   });
 
-  function getSafeRedirectTo() {
-    if (
-      typeof redirectTo === "string" &&
-      redirectTo.startsWith("/") &&
-      !redirectTo.startsWith("//")
-    ) {
-      return redirectTo;
-    }
-
-    return "/my-courses";
-  }
-
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: ResendVerificationFormValues) {
     setIsPending(true);
 
     try {
-      await proxyApiFetch("/api/auth/login", {
+      const response = await proxyApiFetch<null>("/api/auth/resend-verification-email", {
         method: "POST",
         body: JSON.stringify(values),
       });
 
-      toast.success("Đăng nhập thành công");
-      window.location.replace(getSafeRedirectTo());
+      setIsSubmitted(true);
+      toast.success(response.message);
     } catch (error) {
       mapApiErrorToForm(error, form.setError);
 
       if (error instanceof ApiRequestError) {
         toast.error(error.message);
       } else {
-        toast.error("Không thể đăng nhập lúc này");
+        toast.error("Unable to resend verification email right now");
       }
     } finally {
       setIsPending(false);
@@ -82,21 +70,13 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mật khẩu</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="Password@123" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isSubmitted ? (
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            If the account is still waiting for verification, a fresh link is on the way.
+          </p>
+        ) : null}
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isPending ? "Sending..." : "Resend verification email"}
         </Button>
       </form>
     </Form>
