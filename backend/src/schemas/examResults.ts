@@ -8,6 +8,12 @@ const examResultsSchema = {
       primaryKey: true,
     },
 
+    publicSlug: {
+      dbName: "public_slug",
+      type: "VARCHAR(40)",
+      unique: true,
+    },
+
     examSessionId: {
       dbName: "exam_session_id",
       type: "UUID",
@@ -92,6 +98,11 @@ const examResultsSchema = {
 
   indexes: [
     {
+      name: "exam_results_public_slug_key",
+      unique: true,
+      columns: ["public_slug"],
+    },
+    {
       name: "exam_results_exam_id_idx",
       unique: false,
       columns: ["exam_id"],
@@ -114,6 +125,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS exam_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  public_slug VARCHAR(40) NOT NULL UNIQUE DEFAULT ('result-' || encode(gen_random_bytes(12), 'hex')),
   exam_session_id UUID NOT NULL UNIQUE REFERENCES exam_sessions(id) ON DELETE CASCADE,
   exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

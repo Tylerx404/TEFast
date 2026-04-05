@@ -13,3 +13,14 @@ export async function getLessonComments(courseId: string, lessonId: string) {
     `/comments${buildQueryString({ courseId, lessonId, page: 1, limit: 20 })}`,
   );
 }
+
+export async function getCourseLesson(
+  courseKey: string,
+  lessonKey: string,
+) {
+  return safeServerApiFetch<LessonDetail>(
+    `/courses/${courseKey}/lessons/${lessonKey}`,
+    undefined,
+    { auth: true },
+  );
+}

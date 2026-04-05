@@ -4,6 +4,7 @@ var authHandler = require("../utils/authHandler");
 
 var router = express.Router();
 var checkLogin = authHandler.checkLogin;
+var examResultPublicSlugSql = "'result-' || encode(gen_random_bytes(12), 'hex')";
 
 function normalizeValue(value) {
   var keys;
@@ -40,13 +41,47 @@ function isSameAnswer(left, right) {
   return JSON.stringify(normalizeValue(left)) === JSON.stringify(normalizeValue(right));
 }
 
+async function ensureExamResultPublicSlugs(req) {
+  var app = req.app;
+
+  if (!app.locals.examResultPublicSlugSetupPromise) {
+    app.locals.examResultPublicSlugSetupPromise = (async function () {
+      var pool = app.locals.pg;
+
+      await pool.query(
+        `ALTER TABLE exam_results
+         ADD COLUMN IF NOT EXISTS public_slug VARCHAR(40)`,
+      );
+      await pool.query(
+        `ALTER TABLE exam_results
+         ALTER COLUMN public_slug SET DEFAULT ${examResultPublicSlugSql}`,
+      );
+      await pool.query(
+        `UPDATE exam_results
+         SET public_slug = ${examResultPublicSlugSql}
+         WHERE public_slug IS NULL OR public_slug = ''`,
+      );
+      await pool.query(
+        `CREATE UNIQUE INDEX IF NOT EXISTS exam_results_public_slug_key
+         ON exam_results (public_slug)`,
+      );
+    })().catch(function (error) {
+      app.locals.examResultPublicSlugSetupPromise = null;
+      throw error;
+    });
+  }
+
+  await app.locals.examResultPublicSlugSetupPromise;
+}
+
 async function findExamResultById(req, resultId) {
+  await ensureExamResultPublicSlugs(req);
   var pool = req.app.locals.pg;
   var result = await pool.query(
     `SELECT er.*, e.teacher_id, e.title AS exam_title
      FROM exam_results er
      LEFT JOIN exams e ON e.id = er.exam_id
-     WHERE er.id = $1
+     WHERE er.id::text = $1 OR er.public_slug = $1
      LIMIT 1`,
     [resultId],
   );
@@ -100,6 +135,7 @@ async function ensureExamResultReviewAccess(req, res, examResultId) {
 router.get("/my", checkLogin, async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    await ensureExamResultPublicSlugs(req);
     var pageLimit = helper.readPagination(req.query);
     var page = pageLimit.page;
     var limit = pageLimit.limit;
@@ -136,7 +172,8 @@ router.get("/my", checkLogin, async function (req, res, next) {
 
     values.push(limit, offset);
     result = await pool.query(
-      `SELECT er.id, er.exam_id, er.score, er.submitted_at, e.title AS exam_title
+      `SELECT er.id, er.public_slug, er.exam_id, er.score,
+              er.submitted_at, e.title AS exam_title
        FROM exam_results er
        LEFT JOIN exams e ON e.id = er.exam_id
        WHERE ${whereClause}
@@ -148,6 +185,7 @@ router.get("/my", checkLogin, async function (req, res, next) {
     items = result.rows.map(function (row) {
       return {
         id: row.id,
+        publicSlug: row.public_slug,
         examId: row.exam_id,
         examTitle: row.exam_title,
         score: parseFloat(row.score),
@@ -170,6 +208,7 @@ router.get("/my", checkLogin, async function (req, res, next) {
 router.post("/", checkLogin, async function (req, res, next) {
   try {
     var pool = req.app.locals.pg;
+    await ensureExamResultPublicSlugs(req);
     var body = req.body || {};
     var sessionResult;
     var session;
@@ -294,7 +333,8 @@ router.post("/", checkLogin, async function (req, res, next) {
         submitted_at, created_at, updated_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'SUBMITTED', NOW(), NOW(), NOW())
-      RETURNING id, exam_id, user_id, score, correct_count, wrong_count, submitted_at`,
+      RETURNING id, public_slug, exam_id, user_id, score,
+                correct_count, wrong_count, submitted_at`,
       [
         body.examSessionId,
         body.examId,
@@ -316,6 +356,7 @@ router.post("/", checkLogin, async function (req, res, next) {
 
     helper.sendCreated(res, "Exam submitted successfully", {
       id: insertResult.rows[0].id,
+      publicSlug: insertResult.rows[0].public_slug,
       examId: insertResult.rows[0].exam_id,
       userId: insertResult.rows[0].user_id,
       score: parseFloat(insertResult.rows[0].score),
@@ -363,7 +404,7 @@ router.patch("/:id/review", checkLogin, async function (req, res, next) {
       values.push(body.manualScore);
     }
 
-    values.push(req.params.id);
+    values.push(examResult.id);
 
     result = await pool.query(
       `UPDATE exam_results
@@ -395,7 +436,9 @@ router.get("/:id", checkLogin, async function (req, res, next) {
 
     helper.sendSuccess(res, "Exam result fetched", {
       id: examResult.id,
+      publicSlug: examResult.public_slug,
       examId: examResult.exam_id,
+      examTitle: examResult.exam_title,
       userId: examResult.user_id,
       score: parseFloat(examResult.score),
       correctCount: examResult.correct_count,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, Clock3, Layers3, Users } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { EmptyState } from "@/components/app/empty-state";
 import { PageShell } from "@/components/app/page-shell";
@@ -21,33 +22,40 @@ type CourseDetailPageProps = {
 };
 
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
-  const { id } = await params;
-  const [course, lessons, exams, session] = await Promise.all([
-    getCourse(id),
-    getCourseLessons(id),
-    getCourseExams(id),
+  const { id: courseKey } = await params;
+  const [course, session] = await Promise.all([
+    getCourse(courseKey),
     getSession(),
   ]);
-
-  const enrollmentList = session
-    ? await getMyEnrollments({ limit: "100" })
-    : null;
-  const isEnrolled = Boolean(
-    enrollmentList?.data?.some((item) => item.courseId === id),
-  );
 
   if (!course?.data) {
     return (
       <PageShell>
         <EmptyState
-          title="Chưa lấy được thông tin khóa học"
-          description="Kiểm tra lại API `GET /courses/:id` hoặc quay về catalog để chọn khóa học khác."
+          title="Chua lay duoc thong tin khoa hoc"
+          description="Kiem tra lai API GET /courses/:slug hoac quay ve catalog de chon khoa hoc khac."
           actionHref="/courses"
-          actionLabel="Quay lại courses"
+          actionLabel="Quay lai courses"
         />
       </PageShell>
     );
   }
+
+  const courseId = course.data.id;
+  const courseSlug = course.data.slug;
+
+  if (courseKey !== courseSlug) {
+    redirect(`/courses/${courseSlug}`);
+  }
+
+  const [lessons, exams, enrollmentList] = await Promise.all([
+    getCourseLessons(courseId),
+    getCourseExams(courseId),
+    session ? getMyEnrollments({ limit: "100" }) : Promise.resolve(null),
+  ]);
+  const isEnrolled = Boolean(
+    enrollmentList?.data?.some((item) => item.courseId === courseId),
+  );
 
   return (
     <PageShell className="gap-10">
@@ -60,7 +68,10 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
           </div>
           <SectionHeading
             title={course.data.title}
-            description={course.data.description || "Khóa học này đang được cập nhật thêm nội dung và thông tin chi tiết."}
+            description={
+              course.data.description ||
+              "Khoa hoc nay dang duoc cap nhat them noi dung va thong tin chi tiet."
+            }
           />
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="bg-[hsl(var(--background))] shadow-none">
@@ -70,7 +81,9 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 </div>
                 <div>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">Lessons</p>
-                  <p className="text-xl font-semibold">{course.data.stats?.lessonCount ?? lessons?.data?.length ?? 0}</p>
+                  <p className="text-xl font-semibold">
+                    {course.data.stats?.lessonCount ?? lessons?.data?.length ?? 0}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -81,7 +94,9 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 </div>
                 <div>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">Exams</p>
-                  <p className="text-xl font-semibold">{course.data.stats?.examCount ?? exams?.data?.length ?? 0}</p>
+                  <p className="text-xl font-semibold">
+                    {course.data.stats?.examCount ?? exams?.data?.length ?? 0}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -92,7 +107,9 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 </div>
                 <div>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">Enrollments</p>
-                  <p className="text-xl font-semibold">{course.data.stats?.enrollmentCount ?? 0}</p>
+                  <p className="text-xl font-semibold">
+                    {course.data.stats?.enrollmentCount ?? 0}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -101,30 +118,32 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
         <Card>
           <CardHeader>
-            <CardTitle>Thông tin nhanh</CardTitle>
+            <CardTitle>Thong tin nhanh</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Giảng viên</span>
-              <span className="font-medium">{course.data.teacher?.fullName ?? "TEFast Academy"}</span>
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Giang vien</span>
+              <span className="font-medium">
+                {course.data.teacher?.fullName ?? "TEFast Academy"}
+              </span>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Học phí</span>
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Hoc phi</span>
               <span className="font-medium">{formatCurrency(course.data.price)}</span>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Trạng thái</span>
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Trang thai</span>
               <span className="font-medium">
-                {isEnrolled ? "Đã đăng ký" : "Chưa đăng ký"}
+                {isEnrolled ? "Da dang ky" : "Chua dang ky"}
               </span>
             </div>
             <EnrollCourseButton
-              courseId={id}
+              courseId={courseId}
               isAuthenticated={Boolean(session)}
               isEnrolled={isEnrolled}
-              redirectTo={`/courses/${id}`}
+              redirectTo={`/courses/${courseSlug}`}
             />
           </CardContent>
         </Card>
@@ -133,7 +152,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       <section className="grid gap-6 lg:grid-cols-[0.55fr_0.45fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Nội dung bài học</CardTitle>
+            <CardTitle>Noi dung bai hoc</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {lessons?.data?.length ? (
@@ -145,26 +164,26 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                   <div>
                     <p className="font-medium">{lesson.title}</p>
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      Lesson {lesson.orderIndex} {lesson.isPreview ? "• Preview" : ""}
+                      Lesson {lesson.orderIndex} {lesson.isPreview ? "- Preview" : ""}
                     </p>
                   </div>
                   {isEnrolled || lesson.isPreview ? (
                     <Button variant="outline" asChild>
-                      <Link href={`/learn/${id}/lessons/${lesson.id}`}>
-                        Vào bài
+                      <Link href={`/learn/${courseSlug}/lessons/${lesson.orderIndex}`}>
+                        Vao bai
                       </Link>
                     </Button>
                   ) : (
                     <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      Cần enroll
+                      Can enroll
                     </span>
                   )}
                 </div>
               ))
             ) : (
               <EmptyState
-                title="Chưa có lesson"
-                description="Khóa học này hiện chưa có bài học nào để bắt đầu."
+                title="Chua co lesson"
+                description="Khoa hoc nay hien chua co bai hoc nao de bat dau."
               />
             )}
           </CardContent>
@@ -185,13 +204,13 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
                     <span className="flex items-center gap-1">
                       <Clock3 className="h-4 w-4" />
-                      {exam.durationMinutes} phút
+                      {exam.durationMinutes} phut
                     </span>
-                    <span>{exam.totalQuestions} câu hỏi</span>
+                    <span>{exam.totalQuestions} cau hoi</span>
                   </div>
                   <Button className="mt-4 w-full justify-between" asChild>
                     <Link href={`/exams/${exam.id}`}>
-                      Xem đề thi
+                      Xem de thi
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -199,8 +218,8 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
               ))
             ) : (
               <EmptyState
-                title="Chưa có đề thi"
-                description="Hiện chưa có bài thi luyện tập nào cho khóa học này."
+                title="Chua co de thi"
+                description="Hien chua co bai thi luyen tap nao cho khoa hoc nay."
               />
             )}
           </CardContent>
