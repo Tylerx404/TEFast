@@ -16,6 +16,8 @@ var options = {
 var validationHandler = {
   userPostValidation: [
     body("email")
+      .trim()
+      .normalizeEmail()
       .notEmpty()
       .withMessage("email khong duoc de trong")
       .bail()

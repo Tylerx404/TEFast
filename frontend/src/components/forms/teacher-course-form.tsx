@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { ImageUploadField } from "@/components/forms/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -211,7 +212,12 @@ export function TeacherCourseForm({
             <FormItem>
               <FormLabel>Thumbnail URL</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="/uploads/images/course.jpg" />
+                <ImageUploadField
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={isPending}
+                  placeholder="/uploads/images/course.jpg"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
